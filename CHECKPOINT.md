@@ -42,14 +42,22 @@ hal-hal yang sudah dipahami. Cukup baca file ini.
   menghasilkan video normal/panjang, bukan cuma Shorts — jadi asumsi
   "video selalu di bawah 50MB" TIDAK berlaku otomatis di sini. Ini
   berdampak langsung ke desain `telegram_notify` (lihat poin 8).
+- **PENTING — channel YouTube BEDA:** OpenMontage akan upload ke channel
+  YouTube yang berbeda dari WealthVault. Kredensial OAuth
+  (`YT_CLIENT_ID`/`YT_CLIENT_SECRET`/`YT_REFRESH_TOKEN`) WealthVault TIDAK
+  bisa dipakai ulang — perlu dibuat OAuth Client baru + consent flow baru
+  khusus untuk channel OpenMontage saat `make setup`/`.env` diisi nanti.
 
 ## 2. Status fork ini per 5 September 2026
 
 - Branch aktif: `main`.
-- **Perubahan kode yang SUDAH masuk ke repo ini** (lihat poin 8 untuk detail):
+- **Perubahan kode yang SUDAH masuk ke repo ini:**
   - `CHECKPOINT.md` (file ini)
-  - `skills/meta/publish-distribution.md` — SUDAH di-push
+  - `skills/meta/publish-distribution.md` — SUDAH di-push (termasuk revisi
+    Step 3.5, lihat poin 8)
   - `tools/publishers/telegram_notify.py` — SUDAH di-push
+  - `tools/publishers/youtube_upload.py` — SUDAH di-push
+  - `requirements.txt` — SUDAH diupdate (tambah `google-api-python-client`)
 - **Belum `make setup`, belum `.env` diisi.** Repo baru sejauh ini baru
   disentuh lewat GitHub API (baca file + tulis dokumentasi/kode), belum
   pernah benar-benar dijalankan `make setup` di Codespace.
@@ -174,8 +182,9 @@ kontrak operasi agent.
   > A networked publisher (e.g. a YouTube uploader) would be a separate
   > `publish`-capability provider."
 - Ini beda dari WealthVault yang sudah punya M6 (`youtube_upload.py`) sendiri
-  lewat GitHub Actions + cron-job.org. OpenMontage sengaja tidak menyediakan
-  ini secara default — sesi ini sedang membangunnya (lihat poin 8).
+  lewat GitHub Actions + cron-job.org. **Sesi ini sudah menutup gap
+  tersebut** — lihat poin 8, sekarang sudah ada `telegram_notify.py` dan
+  `youtube_upload.py` sendiri untuk OpenMontage.
 
 ## 8. Telegram notify (gate approval) + YouTube upload untuk OpenMontage
 
@@ -191,9 +200,9 @@ kontrak operasi agent.
 
 ### Struktur yang disepakati (ikut pola/konvensi ASLI repo — dikonfirmasi baca source, bukan pola karangan baru)
 
-**A. Tool `telegram_notify.py` — ✅ SUDAH DITULIS DAN DI-PUSH:**
+**A. Tool `telegram_notify.py` — ✅ SUDAH DITULIS DAN DI-PUSH (commit `05ffb96`):**
 ```
-tools/publishers/telegram_notify.py   # SUDAH ADA — commit 05ffb96
+tools/publishers/telegram_notify.py
 ```
 - `capability = "publish"`, `tier = ToolTier.PUBLISH`, `provider = "telegram"`.
 - `dependencies = ["env:TELEGRAM_BOT_TOKEN", "env:TELEGRAM_CHAT_ID",
@@ -204,8 +213,11 @@ tools/publishers/telegram_notify.py   # SUDAH ADA — commit 05ffb96
   tetap keputusan manusia via balasan Telegram, dibaca ulang oleh Hermes,
   bukan oleh tool ini (tool ini SYNC, sekali kirim-selesai, tidak menunggu
   balasan).
-- **Keputusan penting soal limit 50MB Bot API (khusus untuk OpenMontage,
-  BEDA dari asumsi WealthVault):**
+- **Digunakan DUA KALI dalam alur** (lihat bagian C, Step 3.5): sekali
+  sebagai gate approval sebelum upload, sekali lagi sebagai konfirmasi
+  setelah `youtube_upload` sukses — TIDAK ada tool terpisah untuk notifikasi
+  publish, ini satu tool yang sama dipakai dua kali dengan caption berbeda.
+- **Limit 50MB Bot API (khusus OpenMontage, BEDA dari asumsi WealthVault):**
   - WealthVault selalu di bawah 50MB (khusus Shorts) — aman.
   - **OpenMontage TIDAK bisa diasumsikan sama** — bisa menghasilkan video
     normal/panjang, bukan cuma Shorts, jadi risiko kena limit 50MB Bot API
@@ -214,25 +226,45 @@ tools/publishers/telegram_notify.py   # SUDAH ADA — commit 05ffb96
     video > 50MB, tool fallback ke `sendMessage` — kirim caption + path
     lokal video (BUKAN gagal total, BUKAN kirim file terpotong).
   - **Keputusan user:** coba jalan dulu dengan fallback ini. Kalau nanti
-    dirasa tidak cukup (terlalu sering kena kasus >50MB di
-    penggunaan nyata), baru cari workaround lebih baik — kandidat yang
+    dirasa tidak cukup, baru cari workaround lebih baik — kandidat yang
     sudah disebut user: **MTProto client** (mis. Pyrogram/Telethon), yang
     limitnya jauh lebih besar (~2GB) dibanding Bot API biasa. INI BELUM
     DIIMPLEMENTASIKAN — baru dicatat sebagai rencana cadangan kalau perlu.
 
-**B. Tool `youtube_upload.py` — SEDANG DIKERJAKAN:**
+**B. Tool `youtube_upload.py` — ✅ SUDAH DITULIS DAN DI-PUSH (commit `f38bf00`):**
 ```
-tools/publishers/youtube_upload.py    # belum ada — proses baca referensi
-                                       # WealthVault youtube_upload.py dulu
-                                       # untuk adaptasi pola auth/refresh
-                                       # token yang sudah terbukti jalan
+tools/publishers/youtube_upload.py
 ```
+- Autentikasi & pola resumable upload **diadaptasi langsung dari
+  `youtube_upload.py` WealthVault** (`Credentials(...)` + refresh token +
+  `build("youtube","v3",...)` + `MediaFileUpload(..., resumable=True)`) —
+  ini bagian yang sudah terbukti jalan production di WealthVault, dipakai
+  ulang polanya (bukan kode WealthVault-nya, karena beda channel/kredensial).
+- Yang SENGAJA DIBUANG dari versi WealthVault (spesifik arsitektur
+  WealthVault, tidak relevan untuk OpenMontage): fetch asset dari GitHub
+  Releases (`fetch_assets`), baca `state/naskah.json`, commit balik ke git
+  (`update_state_and_commit`) — OpenMontage sudah punya video di filesystem
+  lokal + `publish_log`/checkpoint sendiri, tidak butuh semua itu.
+- `dependencies = ["env:YT_CLIENT_ID", "env:YT_CLIENT_SECRET",
+  "env:YT_REFRESH_TOKEN", "python:google.oauth2.credentials",
+  "python:googleapiclient"]`.
+- **`google-api-python-client` ditambahkan ke `requirements.txt`** — paket
+  ini TIDAK otomatis ter-cover oleh `google-auth`/`google-genai` yang sudah
+  ada sebelumnya (beda paket, `googleapiclient.discovery`/`.http`).
+- `category_id` default `"22"` (People & Blogs) — ini KEPUTUSAN SEPIHAK
+  Claude, bukan dari sumber otoritatif. WealthVault pakai `"25"` (News &
+  Politics) karena kontennya spesifik finance. Kalau user mau kategori beda
+  untuk OpenMontage, tinggal ganti parameter `category_id` saat pemanggilan
+  — belum ada keputusan final dari user soal ini.
+- **PENTING — kredensial OAuth harus BARU**, bukan reuse dari WealthVault,
+  karena channel YouTube tujuan BEDA (dikonfirmasi user).
 
-**C. Meta skill — ✅ SUDAH DITULIS DAN DI-PUSH:**
+**C. Meta skill — ✅ SUDAH DITULIS DAN DI-PUSH (commit terakhir `0c15621`):**
 ```
-skills/meta/publish-distribution.md   # SUDAH ADA — commit e6fd16a
+skills/meta/publish-distribution.md
 ```
-Isi lengkapnya (5 langkah, gaya sama seperti `checkpoint-protocol.md`):
+Isi lengkapnya (5 langkah + Step 3.5, gaya sama seperti
+`checkpoint-protocol.md`):
 1. **When to Use** — dipanggil setelah `export_bundle` selesai packaging,
    sebelum checkpoint stage `publish` ditulis.
 2. **Discover providers** — baca dari `registry.get_by_capability("publish")`,
@@ -245,17 +277,20 @@ Isi lengkapnya (5 langkah, gaya sama seperti `checkpoint-protocol.md`):
    `publish_log.schema.json` (`platform`, `status`, `url`, `video_id`,
    `visibility`, `export_path`, `timestamp`, `metadata_used`, `error` — TIDAK
    BOLEH nambah field baru, `additionalProperties: false` di root & entry).
-   - **Telegram = `status: "pending_review"`**, BUKAN `"published"` — video
-     sedang menunggu keputusan manusia di Telegram.
+   - **Telegram (pra-upload) = `status: "pending_review"`**, BUKAN
+     `"published"` — video sedang menunggu keputusan manusia di Telegram.
    - **YouTube upload baru boleh jalan SETELAH approval Telegram diterima**
      (atau langsung kalau user memang skip Telegram review untuk project
      itu) — YouTube sukses = `status: "published"`, isi `video_id`, `url`,
      `visibility`.
-   - Field platform-spesifik yang tidak masuk skema (misal `chat_id`,
-     `message_id`) TIDAK boleh ditaruh di `entries[]` — kalau perlu disimpan,
-     masuk ke `metadata` di root artifact (itu bagian yang tidak dibatasi
-     skema).
-5. **Checkpoint stage `publish`** pakai `write_checkpoint()` — approval
+5. **Step 3.5 (BARU, ditambah setelah ditemukan gap):** `telegram_notify`
+   WAJIB dipanggil **lagi** setelah `youtube_upload` sukses, kali ini
+   sebagai notifikasi konfirmasi ("✅ Published: <url>"), BUKAN gate lagi —
+   entry `publish_log` untuk panggilan kedua ini `status: "published"`.
+   Ini persis meniru `notify_telegram()` di WealthVault yang tadinya
+   sempat mau dibuang tapi user koreksi supaya tetap dipertahankan, cuma
+   bentuknya jadi "panggil tool yang sama dua kali", bukan tool terpisah.
+6. **Checkpoint stage `publish`** pakai `write_checkpoint()` — approval
    Telegram dan approval gate stage `publish` itu **DUA KEPUTUSAN TERPISAH**:
    dapat thumbs-up di Telegram TIDAK otomatis memenuhi gate stage `publish`.
    Hermes tetap wajib konfirmasi eksplisit ke user sebelum menulis
@@ -285,16 +320,20 @@ Isi lengkapnya (5 langkah, gaya sama seperti `checkpoint-protocol.md`):
       enforcement, prasyarat berurutan
 - [x] Baca `tools/base_tool.py` lengkap + `tools/publishers/export_bundle.py`
       sebagai template gaya penulisan tool
-- [x] Tulis & push `skills/meta/publish-distribution.md`
+- [x] Tulis & push `skills/meta/publish-distribution.md` (+ Step 3.5)
 - [x] Tulis & push `tools/publishers/telegram_notify.py`
-- [ ] Baca `youtube_upload.py` WealthVault (referensi pola auth) — SEDANG
-      DIKERJAKAN
-- [ ] Tulis `tools/publishers/youtube_upload.py`
+- [x] Baca `youtube_upload.py` WealthVault (referensi pola auth)
+- [x] Tulis & push `tools/publishers/youtube_upload.py`
+- [x] Update `requirements.txt` (`google-api-python-client`)
 - [ ] Tambah rujukan Distribution di 11 file `publish-director.md`
-- [ ] `make setup` + isi `.env` di Codespace (belum dilakukan sama sekali)
-- Semua ini masih tahap **DISKUSI/PERENCANAAN + implementasi bertahap**. Tiga
-  file (`CHECKPOINT.md`, `publish-distribution.md`, `telegram_notify.py`)
-  sudah masuk repo.
+- [ ] `make setup` + isi `.env` di Codespace (belum dilakukan sama sekali,
+      termasuk bikin OAuth Client baru untuk channel YouTube OpenMontage)
+- [ ] Keputusan belum final: `category_id` YouTube upload (default saat ini
+      `"22"`, sepihak dari Claude — user belum konfirmasi)
+- Enam file sudah masuk repo: `CHECKPOINT.md`, `publish-distribution.md`,
+  `telegram_notify.py`, `youtube_upload.py`, `requirements.txt` (update).
+  Sisa pekerjaan: rujukan di 11 `publish-director.md`, lalu setup env di
+  Codespace untuk mulai uji coba nyata.
 
 ## 9. Key learnings / aturan permanen untuk sesi berikutnya
 
@@ -312,13 +351,24 @@ Isi lengkapnya (5 langkah, gaya sama seperti `checkpoint-protocol.md`):
 - Repo ini (`OpenMontage`) dan `wealthvault-agent` itu dua konteks terpisah
   — jangan campur checkpoint/pembahasan keduanya. TAPI: pola desain yang
   sudah terbukti jalan di WealthVault (Telegram=gate, YouTube auth/refresh
-  token) boleh dan memang sengaja diadaptasi ke OpenMontage — bukan ditiru
-  membabi buta, disesuaikan ke arsitektur `BaseTool`/`publish_log` di sini.
+  token, notifikasi post-publish) boleh dan memang sengaja diadaptasi ke
+  OpenMontage — bukan ditiru membabi buta, disesuaikan ke arsitektur
+  `BaseTool`/`publish_log` di sini.
 - **Asumsi yang valid di satu project belum tentu valid di project lain**
   — contoh nyata: "video selalu di bawah 50MB" itu benar untuk WealthVault
   (khusus Shorts) tapi TIDAK bisa diasumsikan sama untuk OpenMontage (bisa
   bikin video panjang). Selalu cek konteks project spesifik, jangan
   menggeneralisasi dari satu project ke project lain begitu saja.
+- **Jangan buang fungsi tanpa konfirmasi eksplisit** — sempat hampir salah
+  membuang notifikasi post-publish Telegram (`notify_telegram()` WealthVault)
+  saat adaptasi ke `youtube_upload.py` OpenMontage, karena diasumsikan
+  fungsinya "sudah tercover" tanpa verifikasi jelas. User mengoreksi ini —
+  pelajarannya: kalau ragu apakah sebuah fungsi lama masih relevan/perlu
+  dipertahankan dalam bentuk lain, TANYA dulu, jangan diam-diam dihilangkan.
+- Debugging bug di satu project (mis. tombol Telegram WealthVault yang
+  sempat tidak respons) TIDAK ADA hubungannya dengan pekerjaan paralel di
+  project lain (OpenMontage) kecuali dinyatakan eksplisit — jangan
+  mengasumsikan efek samping lintas-project tanpa bukti.
 - File ini (`CHECKPOINT.md`) murni untuk fase DEVELOPMENT, dibaca MANUAL per
   sesi kerja lanjutan — bukan bagian dari alur produksi video permanen.
   Begitu Telegram+YouTube publisher selesai dan sudah nempel di
