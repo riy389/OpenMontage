@@ -55,6 +55,10 @@ Store in `publish_log.metadata`:
 - Writing generic metadata that ignores the mood.
 - Treating all cutdowns as interchangeable.
 
+## Distribution
+
+After packaging, read `skills/meta/publish-distribution.md` for optional Telegram/YouTube distribution.
+
 ---
 
 ## Gate Reminder (Binding)
