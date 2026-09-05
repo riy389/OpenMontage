@@ -37,6 +37,11 @@ hal-hal yang sudah dipahami. Cukup baca file ini.
 - Fork itu independen total. Apa pun yang diubah di sini **tidak memengaruhi**
   `calesthio/OpenMontage` (upstream) sama sekali, kecuali sengaja dikirim lewat
   Pull Request dan di-approve manual oleh pemilik upstream.
+- **PENTING — perbedaan sifat video antara dua project ini:** WealthVault
+  khusus YouTube Shorts (selalu di bawah 50MB, aman). OpenMontage BISA
+  menghasilkan video normal/panjang, bukan cuma Shorts — jadi asumsi
+  "video selalu di bawah 50MB" TIDAK berlaku otomatis di sini. Ini
+  berdampak langsung ke desain `telegram_notify` (lihat poin 8).
 
 ## 2. Status fork ini per 5 September 2026
 
@@ -44,9 +49,10 @@ hal-hal yang sudah dipahami. Cukup baca file ini.
 - **Perubahan kode yang SUDAH masuk ke repo ini** (lihat poin 8 untuk detail):
   - `CHECKPOINT.md` (file ini)
   - `skills/meta/publish-distribution.md` — SUDAH di-push
+  - `tools/publishers/telegram_notify.py` — SUDAH di-push
 - **Belum `make setup`, belum `.env` diisi.** Repo baru sejauh ini baru
-  disentuh lewat GitHub API (baca file + tulis dokumentasi), belum pernah
-  benar-benar dijalankan `make setup` di Codespace.
+  disentuh lewat GitHub API (baca file + tulis dokumentasi/kode), belum
+  pernah benar-benar dijalankan `make setup` di Codespace.
 - **Issues dinonaktifkan** di repo fork ini (settingan GitHub, kemungkinan
   default fork) — makanya checkpoint disimpan di file ini, bukan di Issue,
   seperti pola WealthVault.
@@ -185,24 +191,44 @@ kontrak operasi agent.
 
 ### Struktur yang disepakati (ikut pola/konvensi ASLI repo — dikonfirmasi baca source, bukan pola karangan baru)
 
-**A. Tool baru — BELUM DITULIS, rencana ditulis SEKALI, otomatis kedeteksi ke SEMUA pipeline:**
+**A. Tool `telegram_notify.py` — ✅ SUDAH DITULIS DAN DI-PUSH:**
 ```
-tools/publishers/telegram_notify.py   # belum ada
-tools/publishers/youtube_upload.py    # belum ada
+tools/publishers/telegram_notify.py   # SUDAH ADA — commit 05ffb96
 ```
-- Alasan cukup sekali tulis: `tool_registry.py` melakukan auto-discovery
-  lewat `pkgutil.walk_packages()` yang scan seluruh isi folder `tools/` —
-  tidak perlu didaftarkan manual di file lain mana pun. Begitu file ada dan
-  class-nya inherit `BaseTool`, otomatis tersedia untuk semua pipeline.
-- Keduanya WAJIB inherit `tools/base_tool.py` → `BaseTool`, dengan minimal:
-  - `capability = "publish"`
-  - `dependencies = ["env:TELEGRAM_BOT_TOKEN", "env:TELEGRAM_CHAT_ID"]`
-    (untuk Telegram) atau env var YouTube yang setara untuk `youtube_upload`
-  - Field `dependencies` dengan prefix `env:` ini otomatis membuat sistem
-    preflight (`provider_menu_summary()`) mendeteksi & menawarkan setup ke
-    user kalau env var belum diisi — tidak perlu logic manual tambahan.
+- `capability = "publish"`, `tier = ToolTier.PUBLISH`, `provider = "telegram"`.
+- `dependencies = ["env:TELEGRAM_BOT_TOKEN", "env:TELEGRAM_CHAT_ID",
+  "python:requests"]` — `requests>=2.31` sudah ada di `requirements.txt`,
+  tidak perlu tambahan dependency.
+- Mengirim video via `sendVideo` (Bot API), catat `publish_log` entry
+  `status: "pending_review"` (BUKAN `"published"`) — approval sesungguhnya
+  tetap keputusan manusia via balasan Telegram, dibaca ulang oleh Hermes,
+  bukan oleh tool ini (tool ini SYNC, sekali kirim-selesai, tidak menunggu
+  balasan).
+- **Keputusan penting soal limit 50MB Bot API (khusus untuk OpenMontage,
+  BEDA dari asumsi WealthVault):**
+  - WealthVault selalu di bawah 50MB (khusus Shorts) — aman.
+  - **OpenMontage TIDAK bisa diasumsikan sama** — bisa menghasilkan video
+    normal/panjang, bukan cuma Shorts, jadi risiko kena limit 50MB Bot API
+    itu nyata.
+  - **Solusi yang dipakai SEKARANG (v1, sudah diimplementasikan):** kalau
+    video > 50MB, tool fallback ke `sendMessage` — kirim caption + path
+    lokal video (BUKAN gagal total, BUKAN kirim file terpotong).
+  - **Keputusan user:** coba jalan dulu dengan fallback ini. Kalau nanti
+    dirasa tidak cukup (terlalu sering kena kasus >50MB di
+    penggunaan nyata), baru cari workaround lebih baik — kandidat yang
+    sudah disebut user: **MTProto client** (mis. Pyrogram/Telethon), yang
+    limitnya jauh lebih besar (~2GB) dibanding Bot API biasa. INI BELUM
+    DIIMPLEMENTASIKAN — baru dicatat sebagai rencana cadangan kalau perlu.
 
-**B. Meta skill — ✅ SUDAH DITULIS DAN DI-PUSH:**
+**B. Tool `youtube_upload.py` — SEDANG DIKERJAKAN:**
+```
+tools/publishers/youtube_upload.py    # belum ada — proses baca referensi
+                                       # WealthVault youtube_upload.py dulu
+                                       # untuk adaptasi pola auth/refresh
+                                       # token yang sudah terbukti jalan
+```
+
+**C. Meta skill — ✅ SUDAH DITULIS DAN DI-PUSH:**
 ```
 skills/meta/publish-distribution.md   # SUDAH ADA — commit e6fd16a
 ```
@@ -235,7 +261,7 @@ Isi lengkapnya (5 langkah, gaya sama seperti `checkpoint-protocol.md`):
    Hermes tetap wajib konfirmasi eksplisit ke user sebelum menulis
    `status="completed", human_approved=True`.
 
-**C. Rujukan 1-2 baris di TIAP 11 file `publish-director.md` — BELUM DIKERJAKAN:**
+**D. Rujukan 1-2 baris di TIAP 11 file `publish-director.md` — BELUM DIKERJAKAN:**
 - Lokasi: `skills/pipelines/<pipeline>/publish-director.md` — ADA SATU FILE
   TERPISAH PER PIPELINE (bukan satu file bersama). Sudah dibandingkan
   langsung: `explainer/publish-director.md` (fokus SEO+thumbnail+chapters,
@@ -257,14 +283,18 @@ Isi lengkapnya (5 langkah, gaya sama seperti `checkpoint-protocol.md`):
 - [x] Baca `schemas/artifacts/publish_log.schema.json`
 - [x] Baca `lib/checkpoint.py` — pahami `write_checkpoint`, gate
       enforcement, prasyarat berurutan
+- [x] Baca `tools/base_tool.py` lengkap + `tools/publishers/export_bundle.py`
+      sebagai template gaya penulisan tool
 - [x] Tulis & push `skills/meta/publish-distribution.md`
-- [ ] Tulis `tools/publishers/telegram_notify.py`
+- [x] Tulis & push `tools/publishers/telegram_notify.py`
+- [ ] Baca `youtube_upload.py` WealthVault (referensi pola auth) — SEDANG
+      DIKERJAKAN
 - [ ] Tulis `tools/publishers/youtube_upload.py`
 - [ ] Tambah rujukan Distribution di 11 file `publish-director.md`
 - [ ] `make setup` + isi `.env` di Codespace (belum dilakukan sama sekali)
-- Semua ini masih tahap **DISKUSI/PERENCANAAN + dokumentasi**. Baru dua file
-  markdown (`CHECKPOINT.md`, `publish-distribution.md`) yang sudah masuk
-  repo — belum ada satu pun file `.py` tool baru yang ditulis.
+- Semua ini masih tahap **DISKUSI/PERENCANAAN + implementasi bertahap**. Tiga
+  file (`CHECKPOINT.md`, `publish-distribution.md`, `telegram_notify.py`)
+  sudah masuk repo.
 
 ## 9. Key learnings / aturan permanen untuk sesi berikutnya
 
@@ -280,7 +310,15 @@ Isi lengkapnya (5 langkah, gaya sama seperti `checkpoint-protocol.md`):
   dari hasil pencarian biasa — jangan simpulkan "tidak ada" hanya dari
   situ; cek langsung ke akun/URL kalau hasil kosong tapi kamu tahu itu ada.
 - Repo ini (`OpenMontage`) dan `wealthvault-agent` itu dua konteks terpisah
-  — jangan campur checkpoint/pembahasan keduanya.
+  — jangan campur checkpoint/pembahasan keduanya. TAPI: pola desain yang
+  sudah terbukti jalan di WealthVault (Telegram=gate, YouTube auth/refresh
+  token) boleh dan memang sengaja diadaptasi ke OpenMontage — bukan ditiru
+  membabi buta, disesuaikan ke arsitektur `BaseTool`/`publish_log` di sini.
+- **Asumsi yang valid di satu project belum tentu valid di project lain**
+  — contoh nyata: "video selalu di bawah 50MB" itu benar untuk WealthVault
+  (khusus Shorts) tapi TIDAK bisa diasumsikan sama untuk OpenMontage (bisa
+  bikin video panjang). Selalu cek konteks project spesifik, jangan
+  menggeneralisasi dari satu project ke project lain begitu saja.
 - File ini (`CHECKPOINT.md`) murni untuk fase DEVELOPMENT, dibaca MANUAL per
   sesi kerja lanjutan — bukan bagian dari alur produksi video permanen.
   Begitu Telegram+YouTube publisher selesai dan sudah nempel di
