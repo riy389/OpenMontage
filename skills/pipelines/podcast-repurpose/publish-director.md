@@ -60,6 +60,10 @@ Recommended metadata keys:
 - Forgetting to tag or mention the guest when that audience matters.
 - Reusing one caption style across every platform.
 
+## Distribution
+
+After packaging, read `skills/meta/publish-distribution.md` for optional Telegram/YouTube distribution.
+
 ---
 
 ## Gate Reminder (Binding)
