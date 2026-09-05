@@ -98,6 +98,46 @@ reply, in chat or reported back from Telegram) before calling
 `AGENT_GUIDE.md` — do not upload without the confirmation the user asked
 for.
 
+### Step 3.5: Confirm Publication Back to Telegram
+
+`telegram_notify` has exactly one job (send a message/video to the
+configured Telegram chat) but it is used at **two different moments** with
+two different meanings, distinguished by what you pass, not by a separate
+tool:
+
+- **Before publishing** (Step 3 above): send the video itself for review.
+  `publish_log` entry: `status: "pending_review"`.
+- **After `youtube_upload` succeeds**: send a short confirmation — no video
+  attachment needed, just a caption pointing at the live URL, e.g.
+  `"✅ Published: https://youtu.be/<video_id>"`. This mirrors the
+  WealthVault pattern's post-upload notification and must not be skipped —
+  a human who approved a gated publish expects to hear that it actually
+  went live, not just that the gate was cleared.
+
+Do this by calling `telegram_notify` again with the result of
+`youtube_upload`:
+
+```python
+youtube = registry.get("youtube_upload")
+yt_result = youtube.execute({...})
+
+if yt_result.success:
+    telegram = registry.get("telegram_notify")
+    telegram.execute({
+        "video_path": ...,  # reuse the same local video; sendVideo will
+                             # attach it again, or pass a text-only path if
+                             # you'd rather not resend the file
+        "caption": f"✅ Published: {yt_result.data['url']}",
+        "project_id": project_id,
+    })
+```
+
+This second call does **not** produce its own `pending_review` gate in the
+same sense — it's a notification, not a request for a decision. Still
+record it as its own `publish_log` entry (`platform: "telegram"`,
+`status: "published"` is reasonable here since nothing further is pending
+on it) rather than silently dropping it from the log — see Step 4.
+
 ### Step 4: Append to `publish_log` — Do Not Invent Fields
 
 `schemas/artifacts/publish_log.schema.json` sets `additionalProperties:
@@ -106,8 +146,10 @@ false` at both the root and the entry level. Only these entry fields exist:
 `timestamp`, `metadata_used`, `error`. `status` must be one of `published`,
 `exported`, `failed`, `draft`, `pending_review`.
 
-Add one entry per provider called, alongside the `export_bundle` entry
-already in the artifact — do not overwrite it:
+Add one entry per provider call, alongside the `export_bundle` entry
+already in the artifact — do not overwrite it. A full run with Telegram
+review + YouTube upload + publish confirmation produces three Telegram/
+YouTube entries in addition to `export_bundle`'s:
 
 ```json
 {
@@ -131,6 +173,14 @@ already in the artifact — do not overwrite it:
     "hashtags": ["#ai"],
     "chapters": [{"start_seconds": 0, "title": "Introduction"}]
   }
+}
+```
+
+```json
+{
+  "platform": "telegram",
+  "status": "published",
+  "timestamp": "2026-09-04T12:06:00+00:00"
 }
 ```
 
@@ -182,8 +232,14 @@ writing `status="completed", human_approved=True`.
    pattern** — a video sent to Telegram is `pending_review`, not
    `published`. YouTube upload (or any further distribution) only proceeds
    after that approval is explicitly received.
-4. **Never invent `publish_log` fields.** The schema is closed
+4. **`telegram_notify` is one tool used twice, for two different purposes**
+   — a pre-publish review request (`pending_review`) and a post-publish
+   confirmation (`status: "published"`, matching WealthVault's "✅
+   Published: <url>" notification). Never skip the second call after a
+   successful `youtube_upload` — silently omitting it leaves the human who
+   approved the gate without confirmation it actually went live.
+5. **Never invent `publish_log` fields.** The schema is closed
    (`additionalProperties: false`). Anything that doesn't fit goes in the
    artifact's root `metadata`, not in an entry.
-5. **A failed distribution call doesn't fail the stage.** Log it, tell the
+6. **A failed distribution call doesn't fail the stage.** Log it, tell the
    user, let them decide — the local export is still a valid deliverable.
