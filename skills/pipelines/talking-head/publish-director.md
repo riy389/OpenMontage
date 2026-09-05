@@ -47,6 +47,14 @@ Document the publish event with platform, status (draft), and export path.
 | **Metadata quality** | Is the title compelling and description informative? |
 | **Completeness** | Is the export package complete? |
 
+### Step 5.5: Distribution (Optional)
+
+After the export package is built, read `skills/meta/publish-distribution.md`
+for optional Telegram review and/or YouTube upload. This appends further
+entries to the same `publish_log` (`pending_review` while awaiting Telegram
+approval, `published` once YouTube upload completes) — it does not replace
+Step 4's export entry.
+
 ### Step 6: Submit
 
 Validate the publish_log against the schema and persist via checkpoint.
