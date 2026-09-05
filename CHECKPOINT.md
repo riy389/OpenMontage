@@ -1,7 +1,7 @@
 # 📍 CHECKPOINT — Baca file ini duluan di chat baru
 
 Ini bukan dokumentasi resmi OpenMontage. Ini catatan pribadi user (riy389) —
-ringkasan lengkap semua yang sudah dibahas/diputuskan sampai 4 September 2026,
+ringkasan lengkap semua yang sudah dibahas/diputuskan sampai 5 September 2026,
 supaya chat baru tidak perlu baca ulang AGENT_GUIDE.md dkk dari nol untuk
 hal-hal yang sudah dipahami. Cukup baca file ini.
 
@@ -38,13 +38,15 @@ hal-hal yang sudah dipahami. Cukup baca file ini.
   `calesthio/OpenMontage` (upstream) sama sekali, kecuali sengaja dikirim lewat
   Pull Request dan di-approve manual oleh pemilik upstream.
 
-## 2. Status fork ini per 4 September 2026
+## 2. Status fork ini per 5 September 2026
 
-- Branch aktif: `main`. **Belum ada satu pun perubahan kode** — masih 100%
-  identik dengan upstream `calesthio/OpenMontage`.
-- **Belum `make setup`, belum `.env` diisi.** Repo baru di-clone secara
-  konsep dalam pembahasan; belum benar-benar dijalankan `make setup` di
-  Codespace sampai checkpoint ini ditulis.
+- Branch aktif: `main`.
+- **Perubahan kode yang SUDAH masuk ke repo ini** (lihat poin 8 untuk detail):
+  - `CHECKPOINT.md` (file ini)
+  - `skills/meta/publish-distribution.md` — SUDAH di-push
+- **Belum `make setup`, belum `.env` diisi.** Repo baru sejauh ini baru
+  disentuh lewat GitHub API (baca file + tulis dokumentasi), belum pernah
+  benar-benar dijalankan `make setup` di Codespace.
 - **Issues dinonaktifkan** di repo fork ini (settingan GitHub, kemungkinan
   default fork) — makanya checkpoint disimpan di file ini, bukan di Issue,
   seperti pola WealthVault.
@@ -104,7 +106,7 @@ kontrak operasi agent.
 - **Hard rule:** kalau Remotion & HyperFrames sama-sama tersedia, WAJIB
   tampilkan dua-duanya ke user sebelum lock `render_runtime`.
 
-### Checkpoint & approval
+### Checkpoint & approval — mekanisme teknis (dari `lib/checkpoint.py`, dibaca langsung)
 
 - Tahap yang di-gate (`human_approval_default: true` di manifest pipeline —
   biasanya `idea`/`proposal`, `script`, `scene_plan`, `assets`, `publish`):
@@ -115,6 +117,21 @@ kontrak operasi agent.
 - Approval per-gate — persetujuan di satu gate tidak otomatis berlaku untuk
   gate berikutnya, kecuali user eksplisit bilang "approve semua" dan itu
   dicatat sebagai `decision_log` entry kategori `approval_policy`.
+- **Fungsi resmi:** `write_checkpoint(pipeline_dir, project_id, stage, status,
+  artifacts, *, pipeline_type=None, ..., human_approved=False, ...)` di
+  `lib/checkpoint.py`. Ini **fail-closed** — kalau stage itu ternyata
+  di-gate manifest (`human_approval_default: true`) tapi ditulis
+  `status="completed"` tanpa `human_approved=True`, fungsi ini melempar
+  `CheckpointValidationError` (`GATE VIOLATION`), bukan diam-diam lolos.
+- **Prasyarat berurutan wajib** (`_enforce_stage_prerequisites`): sebuah
+  stage tidak bisa maju ke `awaiting_human`/`completed` kalau stage
+  sebelumnya di pipeline itu belum `completed` DAN (kalau stage sebelumnya
+  itu gated) belum `human_approved=True`. Ini dicek otomatis oleh
+  `write_checkpoint`, jadi tidak mungkin "loncat" gate lewat urutan salah.
+- Setiap `write_checkpoint()` untuk stage `X` WAJIB menyertakan artifact
+  kanoniknya (`CANONICAL_STAGE_ARTIFACTS[X]`) kalau status `completed`/
+  `awaiting_human` — untuk stage `publish`, artifact wajibnya adalah
+  `publish_log` (relevan langsung untuk rencana Telegram/YouTube di poin 8).
 
 ## 5. Di mana file video final berada
 
@@ -138,37 +155,40 @@ kontrak operasi agent.
   bisa diakses dari browser HP** tanpa port forwarding (`gh codespace ports
   forward 4750:4750`, atau tab "Ports" di VS Code web/app).
 - Kalau forwarding merepotkan, opsi paling praktis untuk kasus HP-only:
-  **skip Backlot sepenuhnya**, andalkan rencana Telegram notify di poin 7.
+  **skip Backlot sepenuhnya**, andalkan Telegram notify di poin 7 & 8.
 
 ## 7. OpenMontage TIDAK punya upload otomatis bawaan — dikonfirmasi dari source
 
 - Stage `publish` di semua pipeline cuma menghasilkan **metadata SEO +
   thumbnail concept + packaging lokal** lewat tool `export_bundle`
-  (`tools/publishers/export_bundle.py`) — SATU-SATUNYA tool di folder
-  `tools/publishers/` saat checkpoint ini ditulis.
+  (`tools/publishers/export_bundle.py`) — sebelum sesi ini, itu
+  SATU-SATUNYA tool di folder `tools/publishers/`.
 - Dikonfirmasi eksplisit di `publish-director.md`:
   > "`export_bundle` is a local, offline packager — it does not upload.
   > A networked publisher (e.g. a YouTube uploader) would be a separate
   > `publish`-capability provider."
 - Ini beda dari WealthVault yang sudah punya M6 (`youtube_upload.py`) sendiri
   lewat GitHub Actions + cron-job.org. OpenMontage sengaja tidak menyediakan
-  ini secara default.
+  ini secara default — sesi ini sedang membangunnya (lihat poin 8).
 
-## 8. RENCANA (belum dikerjakan): Telegram notify + YouTube upload untuk OpenMontage
+## 8. Telegram notify (gate approval) + YouTube upload untuk OpenMontage
 
 ### Alasan / requirement dari user
-- Mau notifikasi/approve video lewat Telegram (mirip pola WealthVault), dan
-  upload YouTube otomatis.
+- Mau notifikasi/approve video lewat Telegram, dan upload YouTube otomatis.
+- **Sifatnya SAMA PERSIS seperti pola WealthVault yang sudah jalan**
+  (dikonfirmasi eksplisit oleh user): Telegram = gate approval manusia,
+  BUKAN sekadar notifikasi biasa. Video baru boleh upload ke YouTube
+  SETELAH di-approve lewat Telegram — bukan otomatis begitu terkirim.
 - **Harus jalan di SEMUA pipeline**, bukan cuma satu — karena pipeline
   dipilih otomatis oleh Hermes berdasarkan request, user tidak manual pilih
   satu pipeline saja untuk dipakai terus-menerus.
 
 ### Struktur yang disepakati (ikut pola/konvensi ASLI repo — dikonfirmasi baca source, bukan pola karangan baru)
 
-**A. Tool baru — ditulis SEKALI, otomatis kedeteksi ke SEMUA pipeline:**
+**A. Tool baru — BELUM DITULIS, rencana ditulis SEKALI, otomatis kedeteksi ke SEMUA pipeline:**
 ```
-tools/publishers/telegram_notify.py
-tools/publishers/youtube_upload.py
+tools/publishers/telegram_notify.py   # belum ada
+tools/publishers/youtube_upload.py    # belum ada
 ```
 - Alasan cukup sekali tulis: `tool_registry.py` melakukan auto-discovery
   lewat `pkgutil.walk_packages()` yang scan seluruh isi folder `tools/` —
@@ -182,23 +202,40 @@ tools/publishers/youtube_upload.py
     preflight (`provider_menu_summary()`) mendeteksi & menawarkan setup ke
     user kalau env var belum diisi — tidak perlu logic manual tambahan.
 
-**B. Meta skill baru (instruksi "kapan & bagaimana pakai tool di atas"):**
+**B. Meta skill — ✅ SUDAH DITULIS DAN DI-PUSH:**
 ```
-skills/meta/publish-distribution.md
+skills/meta/publish-distribution.md   # SUDAH ADA — commit e6fd16a
 ```
-- Ditaruh di `skills/meta/` (sejajar `reviewer.md`, `checkpoint-protocol.md`)
-  karena ini cross-cutting, dipakai semua pipeline — bukan spesifik satu
-  pipeline saja.
-- Gaya penulisan WAJIB ikut pola `skills/meta/checkpoint-protocol.md` yang
-  sudah dibaca lengkap: heading `## When to Use` → `## Protocol` bertahap
-  dengan tabel keputusan → contoh pemanggilan tool ala kode Python → 
-  `## Key Principles` di penutup.
-- Isi intinya: cek `registry.get_by_capability("publish")` untuk lihat
-  provider yang tersedia (Telegram/YouTube/dll), WAJIB tanya user provider
-  mana yang mau dipakai (sesuai Decision Communication Contract — dilarang
-  diam-diam pilih), baru eksekusi setelah dikonfirmasi.
+Isi lengkapnya (5 langkah, gaya sama seperti `checkpoint-protocol.md`):
+1. **When to Use** — dipanggil setelah `export_bundle` selesai packaging,
+   sebelum checkpoint stage `publish` ditulis.
+2. **Discover providers** — baca dari `registry.get_by_capability("publish")`,
+   bukan hardcode nama tool. `export_bundle` selalu muncul; `telegram_notify`
+   dan `youtube_upload` cuma muncul kalau env var-nya sudah diisi.
+3. **Wajib tanya user** provider mana yang dipakai (Telegram/YouTube/lokal
+   saja) sebelum eksekusi — sesuai Decision Communication Contract, dilarang
+   diam-diam pilih.
+4. **Eksekusi + isi `publish_log`** — field harus persis sesuai
+   `publish_log.schema.json` (`platform`, `status`, `url`, `video_id`,
+   `visibility`, `export_path`, `timestamp`, `metadata_used`, `error` — TIDAK
+   BOLEH nambah field baru, `additionalProperties: false` di root & entry).
+   - **Telegram = `status: "pending_review"`**, BUKAN `"published"` — video
+     sedang menunggu keputusan manusia di Telegram.
+   - **YouTube upload baru boleh jalan SETELAH approval Telegram diterima**
+     (atau langsung kalau user memang skip Telegram review untuk project
+     itu) — YouTube sukses = `status: "published"`, isi `video_id`, `url`,
+     `visibility`.
+   - Field platform-spesifik yang tidak masuk skema (misal `chat_id`,
+     `message_id`) TIDAK boleh ditaruh di `entries[]` — kalau perlu disimpan,
+     masuk ke `metadata` di root artifact (itu bagian yang tidak dibatasi
+     skema).
+5. **Checkpoint stage `publish`** pakai `write_checkpoint()` — approval
+   Telegram dan approval gate stage `publish` itu **DUA KEPUTUSAN TERPISAH**:
+   dapat thumbs-up di Telegram TIDAK otomatis memenuhi gate stage `publish`.
+   Hermes tetap wajib konfirmasi eksplisit ke user sebelum menulis
+   `status="completed", human_approved=True`.
 
-**C. Rujukan 1-2 baris di TIAP 11 file `publish-director.md`:**
+**C. Rujukan 1-2 baris di TIAP 11 file `publish-director.md` — BELUM DIKERJAKAN:**
 - Lokasi: `skills/pipelines/<pipeline>/publish-director.md` — ADA SATU FILE
   TERPISAH PER PIPELINE (bukan satu file bersama). Sudah dibandingkan
   langsung: `explainer/publish-director.md` (fokus SEO+thumbnail+chapters,
@@ -209,26 +246,25 @@ skills/meta/publish-distribution.md
   ini** — jadi baris rujukan baru ke `skills/meta/publish-distribution.md`
   ini perlu ditambah manual satu-satu di semua 11 file (bukan otomatis
   nyambung hanya dengan bikin meta skill-nya saja).
-- Pola rujukannya nanti kira-kira: tambah section kecil di akhir tiap file
-  (sebelum atau sesudah "Gate Reminder"), semacam:
+- Pola rujukannya rencana:
   ```
   ## Distribution
   After packaging, read `skills/meta/publish-distribution.md` for optional
   Telegram/YouTube distribution.
   ```
 
-### Belum dikerjakan — next steps kalau lanjut
-- [ ] Baca `schemas/artifacts/publish_log.schema.json` — cek field yang
-      diizinkan sebelum desain struktur data status Telegram/YouTube.
-      (Catatan: `publish-director.md` eksplisit menyebut schema ini pakai
-      `additionalProperties: false`, jadi field tidak bisa asal ditambah.)
-- [ ] Tulis isi lengkap `skills/meta/publish-distribution.md`.
-- [ ] Tulis `tools/publishers/telegram_notify.py` dan
-      `tools/publishers/youtube_upload.py`.
-- [ ] Tambah rujukan Distribution di 11 file `publish-director.md`.
-- [ ] `make setup` + isi `.env` di Codespace (belum dilakukan sama sekali).
-- **Semua ini masih tahap DISKUSI/PERENCANAAN.** Belum ada satu pun
-  perubahan kode yang di-push ke repo ini sampai checkpoint ini ditulis.
+### Progress checklist (update per checkpoint ini)
+- [x] Baca `schemas/artifacts/publish_log.schema.json`
+- [x] Baca `lib/checkpoint.py` — pahami `write_checkpoint`, gate
+      enforcement, prasyarat berurutan
+- [x] Tulis & push `skills/meta/publish-distribution.md`
+- [ ] Tulis `tools/publishers/telegram_notify.py`
+- [ ] Tulis `tools/publishers/youtube_upload.py`
+- [ ] Tambah rujukan Distribution di 11 file `publish-director.md`
+- [ ] `make setup` + isi `.env` di Codespace (belum dilakukan sama sekali)
+- Semua ini masih tahap **DISKUSI/PERENCANAAN + dokumentasi**. Baru dua file
+  markdown (`CHECKPOINT.md`, `publish-distribution.md`) yang sudah masuk
+  repo — belum ada satu pun file `.py` tool baru yang ditulis.
 
 ## 9. Key learnings / aturan permanen untuk sesi berikutnya
 
@@ -245,3 +281,9 @@ skills/meta/publish-distribution.md
   situ; cek langsung ke akun/URL kalau hasil kosong tapi kamu tahu itu ada.
 - Repo ini (`OpenMontage`) dan `wealthvault-agent` itu dua konteks terpisah
   — jangan campur checkpoint/pembahasan keduanya.
+- File ini (`CHECKPOINT.md`) murni untuk fase DEVELOPMENT, dibaca MANUAL per
+  sesi kerja lanjutan — bukan bagian dari alur produksi video permanen.
+  Begitu Telegram+YouTube publisher selesai dan sudah nempel di
+  `publish-distribution.md`/`publish-director.md`, isi checkpoint ini jadi
+  usang dan boleh dihapus/ditandai selesai. Instruksi cara pakai yang
+  PERMANEN letaknya di `skills/meta/publish-distribution.md`, bukan di sini.
