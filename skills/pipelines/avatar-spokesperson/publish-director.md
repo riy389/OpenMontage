@@ -43,6 +43,10 @@ If the avatar path has limitations such as visible lip-sync risk, retain that no
 - Reusing generic metadata that ignores the spokesperson offer.
 - Dropping risk notes that matter for downstream publishing teams.
 
+## Distribution
+
+After packaging, read `skills/meta/publish-distribution.md` for optional Telegram/YouTube distribution.
+
 ---
 
 ## Gate Reminder (Binding)
