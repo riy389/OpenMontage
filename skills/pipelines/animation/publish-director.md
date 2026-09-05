@@ -44,6 +44,10 @@ Store in `publish_log.metadata`:
 - Creating a thumbnail concept unrelated to the final frames.
 - Mixing platform variants without clear labels.
 
+## Distribution
+
+After packaging, read `skills/meta/publish-distribution.md` for optional Telegram/YouTube distribution.
+
 ---
 
 ## Gate Reminder (Binding)
