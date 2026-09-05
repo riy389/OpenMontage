@@ -79,6 +79,10 @@ For developer or product-demo content, also package:
 - Using the same caption for YouTube, LinkedIn, and short-form social.
 - Building chapter markers from the script without checking the render.
 
+## Distribution
+
+After packaging, read `skills/meta/publish-distribution.md` for optional Telegram/YouTube distribution.
+
 ---
 
 ## Gate Reminder (Binding)
