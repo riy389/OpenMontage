@@ -58,6 +58,8 @@ hal-hal yang sudah dipahami. Cukup baca file ini.
   - `tools/publishers/telegram_notify.py` — SUDAH di-push
   - `tools/publishers/youtube_upload.py` — SUDAH di-push
   - `requirements.txt` — SUDAH diupdate (tambah `google-api-python-client`)
+  - **Semua 11 `skills/pipelines/<pipeline>/publish-director.md` yang punya
+    stage publish — SUDAH diberi rujukan Distribution** (lihat poin 8.D)
 - **Belum `make setup`, belum `.env` diisi.** Repo baru sejauh ini baru
   disentuh lewat GitHub API (baca file + tulis dokumentasi/kode), belum
   pernah benar-benar dijalankan `make setup` di Codespace.
@@ -91,10 +93,15 @@ kontrak operasi agent.
   langsung, atau skip pipeline demi API call langsung.
 - **State machine per produksi:**
   `research → proposal → script → scene_plan → assets → edit → compose → publish`
-  (stage `publish` ada di semua pipeline versi "v2.0" — mayoritas pipeline).
-- **12 pipeline** ada di `pipeline_defs/*.yaml`. **Hermes yang memilih**
-  pipeline berdasarkan permintaan user — user TIDAK wajib tahu nama pipeline
-  duluan. Kalau ambigu, Hermes yang tanya balik.
+  (stage `publish` ada di sebagian besar pipeline, TIDAK SEMUA — lihat
+  pengecualian `documentary-montage` di poin 8.D).
+- **12 folder pipeline** ada di `skills/pipelines/` (dikonfirmasi dengan
+  menghitung langsung, BUKAN 11 seperti sempat dicatat sebelumnya):
+  `animation`, `avatar-spokesperson`, `character-animation`, `cinematic`,
+  `clip-factory`, `documentary-montage`, `explainer`, `hybrid`,
+  `localization-dub`, `podcast-repurpose`, `screen-demo`, `talking-head`.
+  **Hermes yang memilih** pipeline berdasarkan permintaan user — user TIDAK
+  wajib tahu nama pipeline duluan. Kalau ambigu, Hermes yang tanya balik.
 - **3 layer pengetahuan:**
   1. `tools/` — apa yang ada, cost, runtime (Layer 1, lewat `tool_registry.py`)
   2. `skills/` — cara OpenMontage mau tools itu dipakai, per-pipeline (Layer 2)
@@ -296,23 +303,48 @@ Isi lengkapnya (5 langkah + Step 3.5, gaya sama seperti
    Hermes tetap wajib konfirmasi eksplisit ke user sebelum menulis
    `status="completed", human_approved=True`.
 
-**D. Rujukan 1-2 baris di TIAP 11 file `publish-director.md` — BELUM DIKERJAKAN:**
-- Lokasi: `skills/pipelines/<pipeline>/publish-director.md` — ADA SATU FILE
-  TERPISAH PER PIPELINE (bukan satu file bersama). Sudah dibandingkan
-  langsung: `explainer/publish-director.md` (fokus SEO+thumbnail+chapters,
-  pakai `export_bundle`) vs `cinematic/publish-director.md` (fokus
-  hero/derivative/teaser cut, TIDAK sebut `export_bundle` sama sekali) —
-  strukturnya beda total per pipeline.
-- **Tidak ada precedent shared-reference antar publish-director sebelum
-  ini** — jadi baris rujukan baru ke `skills/meta/publish-distribution.md`
-  ini perlu ditambah manual satu-satu di semua 11 file (bukan otomatis
-  nyambung hanya dengan bikin meta skill-nya saja).
-- Pola rujukannya rencana:
+**D. Rujukan `## Distribution` di file `publish-director.md` — ✅ SELESAI SEMUA:**
+- **KOREKSI PENTING:** OpenMontage punya **12 folder pipeline**, bukan 11
+  seperti dicatat sebelumnya. Ketemu satu pipeline tambahan yang belum
+  pernah dicek: **`documentary-montage`**.
+- `documentary-montage` **TIDAK punya `publish-director.md`** sama sekali
+  (juga tidak punya `script-director.md`/`proposal-director.md`/
+  `research-director.md` — strukturnya cuma
+  `idea/scene/asset/edit/compose-director.md` + `executive-producer.md`).
+  Kemungkinan ini pipeline versi lama/struktur berbeda, BUKAN "v2.0" penuh.
+  Jadi TIDAK ada rujukan Distribution ditambahkan di pipeline ini — tidak
+  ada tempat untuk menaruhnya.
+- **11 pipeline lain SEMUA sudah dikonfirmasi punya `publish-director.md`**
+  (dicek satu-satu lewat `get_file_contents`, bukan diasumsikan dari nama
+  folder) dan **SEMUA sudah diberi rujukan Distribution**:
+  1. `animation` ✅ (commit `7cb9056`)
+  2. `avatar-spokesperson` ✅ (commit `79254b5`)
+  3. `character-animation` ✅ (commit `81451d3`)
+  4. `cinematic` ✅ (commit `5f9a58f`)
+  5. `clip-factory` ✅ (commit `71b7451`)
+  6. `explainer` ✅ (commit `c091aa9`) — ditaruh sebagai **Step 7.5** (gaya
+     numbered steps, beda dari yang lain yang pakai heading `## Distribution`
+     biasa)
+  7. `hybrid` ✅ (commit `ccada79`)
+  8. `localization-dub` ✅ (commit `5f9d214`)
+  9. `podcast-repurpose` ✅ (commit `5936ecb`)
+  10. `screen-demo` ✅ (commit `d4a8b9d`)
+  11. `talking-head` ✅ (commit `c012537`) — ditaruh sebagai **Step 5.5**
+      (sama alasan dengan explainer, gaya numbered steps)
+- Sudah dikonfirmasi sebelumnya (dan tetap benar): **tidak ada precedent
+  shared-reference** antar publish-director sebelum sesi ini — tiap file
+  isinya beda total gaya (SEO-heavy di explainer vs hero/derivative di
+  cinematic vs locale-based di localization-dub, dst). Rujukan Distribution
+  ditambah manual satu-satu, bukan lewat mekanisme otomatis.
+- Pola rujukan yang dipakai (untuk file bergaya heading biasa):
   ```
   ## Distribution
   After packaging, read `skills/meta/publish-distribution.md` for optional
   Telegram/YouTube distribution.
   ```
+  Untuk file bergaya numbered-steps (`explainer`, `talking-head`), rujukan
+  ditaruh sebagai step tersisip (`Step 7.5`/`Step 5.5`) dengan kalimat yang
+  disesuaikan konteks step sekitarnya, bukan disalin persis.
 
 ### Progress checklist (update per checkpoint ini)
 - [x] Baca `schemas/artifacts/publish_log.schema.json`
@@ -325,15 +357,19 @@ Isi lengkapnya (5 langkah + Step 3.5, gaya sama seperti
 - [x] Baca `youtube_upload.py` WealthVault (referensi pola auth)
 - [x] Tulis & push `tools/publishers/youtube_upload.py`
 - [x] Update `requirements.txt` (`google-api-python-client`)
-- [ ] Tambah rujukan Distribution di 11 file `publish-director.md`
+- [x] **Tambah rujukan Distribution di semua 11 `publish-director.md` yang
+      ada** (12 pipeline total, `documentary-montage` dikecualikan karena
+      tidak punya stage publish)
 - [ ] `make setup` + isi `.env` di Codespace (belum dilakukan sama sekali,
       termasuk bikin OAuth Client baru untuk channel YouTube OpenMontage)
 - [ ] Keputusan belum final: `category_id` YouTube upload (default saat ini
       `"22"`, sepihak dari Claude — user belum konfirmasi)
-- Enam file sudah masuk repo: `CHECKPOINT.md`, `publish-distribution.md`,
-  `telegram_notify.py`, `youtube_upload.py`, `requirements.txt` (update).
-  Sisa pekerjaan: rujukan di 11 `publish-director.md`, lalu setup env di
-  Codespace untuk mulai uji coba nyata.
+- **Bagian dokumentasi/kode dari rencana Telegram+YouTube publisher SUDAH
+  SELESAI SEPENUHNYA** (17 file berubah/ditambah total: `CHECKPOINT.md`,
+  `publish-distribution.md`, `telegram_notify.py`, `youtube_upload.py`,
+  `requirements.txt`, + 11 `publish-director.md`). Yang tersisa murni
+  operasional: `make setup`, isi `.env`, bikin OAuth Client YouTube baru,
+  lalu uji coba nyata end-to-end.
 
 ## 9. Key learnings / aturan permanen untuk sesi berikutnya
 
@@ -343,6 +379,12 @@ Isi lengkapnya (5 langkah + Step 3.5, gaya sama seperti
   semua topik. Kalau ditanya dan belum tahu, baca dulu baru jawab; jangan
   tanya izin "mau dibaca dulu gak" — user sudah kasih akses MCP GitHub
   supaya langsung dipakai.
+- **Jangan asumsikan jumlah/daftar item dari ingatan sebelumnya** — contoh
+  nyata sesi ini: sempat dicatat "11 pipeline" tanpa menghitung ulang
+  langsung dari `skills/pipelines/`, padahal aslinya ada 12 folder
+  (`documentary-montage` terlewat). Selalu `get_file_contents` pada
+  direktori aslinya untuk memverifikasi jumlah/daftar sebelum menyatakan
+  sesuatu "selesai untuk semua N item".
 - Fork GitHub independen total dari upstream — perubahan di fork tidak
   memengaruhi repo asal, kecuali PR yang di-approve manual.
 - `search_repositories` GitHub API secara default **menyembunyikan fork**
