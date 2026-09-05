@@ -43,6 +43,10 @@ If a language output has pronunciation caveats, timing warnings, or missing lip 
 - Mixing audio-dub and subtitle-only variants under the same generic filename.
 - Removing the QA notes that explain known issues.
 
+## Distribution
+
+After packaging, read `skills/meta/publish-distribution.md` for optional Telegram/YouTube distribution.
+
 ---
 
 ## Gate Reminder (Binding)
