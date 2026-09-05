@@ -49,6 +49,10 @@ Recommended metadata keys:
 - Packaging a source-led project like a generic generated asset.
 - Losing platform-specific copy and labeling across variants.
 
+## Distribution
+
+After packaging, read `skills/meta/publish-distribution.md` for optional Telegram/YouTube distribution.
+
 ---
 
 ## Gate Reminder (Binding)
