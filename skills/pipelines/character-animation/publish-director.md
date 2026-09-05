@@ -25,6 +25,10 @@ Produce `publish_log` with:
 - platform-specific export notes,
 - limitations or follow-up recommendations.
 
+## Distribution
+
+After packaging, read `skills/meta/publish-distribution.md` for optional Telegram/YouTube distribution.
+
 ---
 
 ## Gate Reminder (Binding)
