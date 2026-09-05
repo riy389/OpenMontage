@@ -59,6 +59,10 @@ Store in `publish_log.metadata`:
 - Using one caption everywhere.
 - Losing the rank/order logic after rendering is complete.
 
+## Distribution
+
+After packaging, read `skills/meta/publish-distribution.md` for optional Telegram/YouTube distribution.
+
 ---
 
 ## Gate Reminder (Binding)
