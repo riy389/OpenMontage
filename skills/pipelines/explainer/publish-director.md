@@ -151,6 +151,14 @@ Score (1-5):
 
 If any dimension scores below 3, revise.
 
+### Step 7.5: Distribution (Optional)
+
+After `export_bundle` succeeds, read `skills/meta/publish-distribution.md` for
+optional Telegram review and/or YouTube upload. This appends further entries
+to the same `publish_log` (`pending_review` while awaiting Telegram approval,
+`published` once YouTube upload completes) — it does not replace Step 6's
+`export_bundle` entry.
+
 ### Step 8: Submit
 
 Validate the publish_log against the schema and persist via checkpoint.
