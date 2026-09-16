@@ -5,6 +5,11 @@ ringkasan lengkap semua yang sudah dibahas/diputuskan sampai 5 September 2026,
 supaya chat baru tidak perlu baca ulang AGENT_GUIDE.md dkk dari nol untuk
 hal-hal yang sudah dipahami. Cukup baca file ini.
 
+**Update 16 September 2026 — lihat poin 10 untuk apa yang berubah sejak
+5 September.** Poin 1–9 di bawah dibiarkan apa adanya sebagai histori,
+kecuali satu koreksi eksplisit di poin 1 (soal reuse OAuth) yang ditandai
+jelas supaya tidak membingungkan pembaca berikutnya.
+
 ---
 
 ## 0. Konteks environment user
@@ -42,11 +47,15 @@ hal-hal yang sudah dipahami. Cukup baca file ini.
   menghasilkan video normal/panjang, bukan cuma Shorts — jadi asumsi
   "video selalu di bawah 50MB" TIDAK berlaku otomatis di sini. Ini
   berdampak langsung ke desain `telegram_notify` (lihat poin 8).
-- **PENTING — channel YouTube BEDA:** OpenMontage akan upload ke channel
-  YouTube yang berbeda dari WealthVault. Kredensial OAuth
-  (`YT_CLIENT_ID`/`YT_CLIENT_SECRET`/`YT_REFRESH_TOKEN`) WealthVault TIDAK
-  bisa dipakai ulang — perlu dibuat OAuth Client baru + consent flow baru
-  khusus untuk channel OpenMontage saat `make setup`/`.env` diisi nanti.
+- **PENTING — channel YouTube BEDA:** OpenMontage upload ke channel YouTube
+  yang berbeda dari WealthVault (channel baru: "The Forgotten Shadows",
+  niche dark history). **KOREKSI (sesi lanjutan, lihat poin 10):**
+  `YT_CLIENT_ID`/`YT_CLIENT_SECRET` WealthVault BOLEH dan SUDAH di-reuse —
+  itu identitas aplikasi Google Cloud, bukan identitas channel, jadi bisa
+  dipakai untuk authorize channel manapun berkali-kali tanpa buat Client
+  baru. Yang WAJIB baru per channel cuma `YT_REFRESH_TOKEN` (didapat lewat
+  consent flow baru, dengan channel target aktif saat klik Allow). Ini
+  sudah selesai dikerjakan — lihat poin 10.
 
 ## 2. Status fork ini per 5 September 2026
 
@@ -60,9 +69,8 @@ hal-hal yang sudah dipahami. Cukup baca file ini.
   - `requirements.txt` — SUDAH diupdate (tambah `google-api-python-client`)
   - **Semua 11 `skills/pipelines/<pipeline>/publish-director.md` yang punya
     stage publish — SUDAH diberi rujukan Distribution** (lihat poin 8.D)
-- **Belum `make setup`, belum `.env` diisi.** Repo baru sejauh ini baru
-  disentuh lewat GitHub API (baca file + tulis dokumentasi/kode), belum
-  pernah benar-benar dijalankan `make setup` di Codespace.
+- **Belum `make setup`, belum `.env` diisi** (per 5 September — SUDAH SELESAI
+  di sesi lanjutan, lihat poin 10).
 - **Issues dinonaktifkan** di repo fork ini (settingan GitHub, kemungkinan
   default fork) — makanya checkpoint disimpan di file ini, bukan di Issue,
   seperti pola WealthVault.
@@ -262,9 +270,10 @@ tools/publishers/youtube_upload.py
   Claude, bukan dari sumber otoritatif. WealthVault pakai `"25"` (News &
   Politics) karena kontennya spesifik finance. Kalau user mau kategori beda
   untuk OpenMontage, tinggal ganti parameter `category_id` saat pemanggilan
-  — belum ada keputusan final dari user soal ini.
-- **PENTING — kredensial OAuth harus BARU**, bukan reuse dari WealthVault,
-  karena channel YouTube tujuan BEDA (dikonfirmasi user).
+  — **masih belum ada keputusan final dari user soal ini** (tetap terbuka
+  per 16 September).
+- **PENTING — kredensial OAuth:** lihat koreksi di poin 1 dan detail
+  pelaksanaan di poin 10 — Client ID/Secret di-reuse, refresh token baru.
 
 **C. Meta skill — ✅ SUDAH DITULIS DAN DI-PUSH (commit terakhir `0c15621`):**
 ```
@@ -346,7 +355,7 @@ Isi lengkapnya (5 langkah + Step 3.5, gaya sama seperti
   ditaruh sebagai step tersisip (`Step 7.5`/`Step 5.5`) dengan kalimat yang
   disesuaikan konteks step sekitarnya, bukan disalin persis.
 
-### Progress checklist (update per checkpoint ini)
+### Progress checklist (per 5 September — status terbaru ada di poin 10)
 - [x] Baca `schemas/artifacts/publish_log.schema.json`
 - [x] Baca `lib/checkpoint.py` — pahami `write_checkpoint`, gate
       enforcement, prasyarat berurutan
@@ -360,16 +369,15 @@ Isi lengkapnya (5 langkah + Step 3.5, gaya sama seperti
 - [x] **Tambah rujukan Distribution di semua 11 `publish-director.md` yang
       ada** (12 pipeline total, `documentary-montage` dikecualikan karena
       tidak punya stage publish)
-- [ ] `make setup` + isi `.env` di Codespace (belum dilakukan sama sekali,
-      termasuk bikin OAuth Client baru untuk channel YouTube OpenMontage)
+- [x] `make setup` + isi `.env` di Codespace — **SELESAI, lihat poin 10**
 - [ ] Keputusan belum final: `category_id` YouTube upload (default saat ini
       `"22"`, sepihak dari Claude — user belum konfirmasi)
 - **Bagian dokumentasi/kode dari rencana Telegram+YouTube publisher SUDAH
   SELESAI SEPENUHNYA** (17 file berubah/ditambah total: `CHECKPOINT.md`,
   `publish-distribution.md`, `telegram_notify.py`, `youtube_upload.py`,
-  `requirements.txt`, + 11 `publish-director.md`). Yang tersisa murni
-  operasional: `make setup`, isi `.env`, bikin OAuth Client YouTube baru,
-  lalu uji coba nyata end-to-end.
+  `requirements.txt`, + 11 `publish-director.md`). **Bagian operasional
+  (`make setup`, isi `.env`, OAuth Client baru) SUDAH SELESAI juga per
+  16 September — lihat poin 10.** Yang tersisa: uji coba nyata end-to-end.
 
 ## 9. Key learnings / aturan permanen untuk sesi berikutnya
 
@@ -385,11 +393,25 @@ Isi lengkapnya (5 langkah + Step 3.5, gaya sama seperti
   (`documentary-montage` terlewat). Selalu `get_file_contents` pada
   direktori aslinya untuk memverifikasi jumlah/daftar sebelum menyatakan
   sesuatu "selesai untuk semua N item".
+- **Cek folder/struktur lengkap sebelum menulis kode baru** — contoh nyata
+  sesi lanjutan (poin 10): sempat menulis `tools/graphics/wikimedia_image.py`
+  dan `loc_image.py` dari nol tanpa mengecek `tools/video/stock_sources/`
+  lebih dulu, padahal folder itu sudah punya implementasi Wikimedia/LOC yang
+  jauh lebih matang (adapter pattern, cascading search, terintegrasi ke
+  corpus builder). Hasilnya kerja duplikat yang harus dihapus lagi.
+  Pelajaran: sebelum bikin tool/provider baru, `get_file_contents` pada
+  SEMUA folder yang mungkin relevan (bukan cuma yang paling jelas dari nama),
+  terutama untuk kapabilitas yang generic (image/video source) yang bisa
+  saja sudah diimplementasikan di lokasi lain dari yang diduga.
 - Fork GitHub independen total dari upstream — perubahan di fork tidak
   memengaruhi repo asal, kecuali PR yang di-approve manual.
 - `search_repositories` GitHub API secara default **menyembunyikan fork**
   dari hasil pencarian biasa — jangan simpulkan "tidak ada" hanya dari
   situ; cek langsung ke akun/URL kalau hasil kosong tapi kamu tahu itu ada.
+- `search_code` GitHub API kadang tidak langsung mengindeks file yang baru
+  di-push atau sudah lama ada (delay indexing) — kalau hasilnya kosong tapi
+  kamu ragu, cek langsung lewat `get_file_contents` pada direktori/path yang
+  dicurigai, jangan simpulkan "tidak ada" hanya dari `search_code` kosong.
 - Repo ini (`OpenMontage`) dan `wealthvault-agent` itu dua konteks terpisah
   — jangan campur checkpoint/pembahasan keduanya. TAPI: pola desain yang
   sudah terbukti jalan di WealthVault (Telegram=gate, YouTube auth/refresh
@@ -411,9 +433,102 @@ Isi lengkapnya (5 langkah + Step 3.5, gaya sama seperti
   sempat tidak respons) TIDAK ADA hubungannya dengan pekerjaan paralel di
   project lain (OpenMontage) kecuali dinyatakan eksplisit — jangan
   mengasumsikan efek samping lintas-project tanpa bukti.
+- **Jangan pernah tampilkan/cat isi file `.env` mentah ke chat manapun**,
+  bahkan untuk "verifikasi" — pakai cek kosong/terisi saja (lihat poin 10),
+  karena upaya redaksi manual bisa gagal dan membocorkan fragmen key asli.
+  Kalau ada kebocoran, sarankan rotate key yang bersangkutan.
 - File ini (`CHECKPOINT.md`) murni untuk fase DEVELOPMENT, dibaca MANUAL per
   sesi kerja lanjutan — bukan bagian dari alur produksi video permanen.
   Begitu Telegram+YouTube publisher selesai dan sudah nempel di
   `publish-distribution.md`/`publish-director.md`, isi checkpoint ini jadi
   usang dan boleh dihapus/ditandai selesai. Instruksi cara pakai yang
   PERMANEN letaknya di `skills/meta/publish-distribution.md`, bukan di sini.
+
+## 10. Sesi lanjutan (16 September 2026) — operasional selesai, siap testing
+
+Semua bagian "belum" di poin 8 checklist sudah dikerjakan. Ringkasan:
+
+- **`make setup` dijalankan di Codespace** — `.venv`, `requirements.txt`,
+  `npm install` (remotion-composer), piper-tts semua sukses. HyperFrames
+  cache-warm timeout (opsional, tidak masalah).
+- **`.env.example` ditambah 6 variable yang tadinya hilang** (commit
+  `6e04f3e`): `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `YT_CLIENT_ID`,
+  `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN`, `COMFYUI_IMAGE_SERVER_URL`.
+- **`.env` di Codespace sudah terisi lengkap** untuk pendekatan
+  free-sources-first:
+  - Telegram: `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` — **reuse dari bot
+    WealthVault yang sudah ada** (dikonfirmasi aman: `telegram_notify.py`
+    murni one-way notify, tidak baca balasan/webhook, jadi tidak ada risiko
+    tabrakan state antar-project di level kode).
+  - YouTube: `YT_CLIENT_ID`/`YT_CLIENT_SECRET` **reuse dari WealthVault**
+    (lihat koreksi poin 1). `YT_REFRESH_TOKEN` **baru**, didapat via
+    `google-auth-oauthlib` `InstalledAppFlow.run_local_server(port=8080,
+    open_browser=False)` dijalankan **langsung di Termux** (bukan
+    Codespaces) — supaya browser HP dan script Python sama-sama di
+    `localhost`, menghindari kerumitan port-forwarding Codespaces sama
+    sekali. Catatan penting: redirect_uri `urn:ietf:wg:oauth:2.0:oob` sudah
+    DIDEPRECATE Google — jangan pakai itu lagi, selalu pakai
+    `run_local_server` dengan `open_browser=False` kalau tidak ada
+    browser GUI otomatis yang bisa dipakai flow-nya.
+  - Channel YouTube baru: **"The Forgotten Shadows"** (niche dark history).
+    Nama sengaja dibuat spesifik/tidak generik, sesuai permintaan user.
+  - Pexels: `PEXELS_API_KEY` **reuse dari WealthVault** — dikonfirmasi
+    key ini akan **dipakai bersama (shared quota)** oleh WealthVault dan
+    OpenMontage, bukan kuota terpisah. Limit gratis: 200 req/jam + 20.000
+    req/bulan (bisa minta unlimited gratis kalau eligible).
+  - Pixabay: `PIXABAY_API_KEY` **reuse dari WealthVault**, sama-sama shared
+    quota. Limit gratis: ~100 req/menit (wajib cache 24 jam, dilarang
+    hotlink — `pexels_video.py`/`pixabay_video.py` yang ada sudah patuh
+    karena download ke file lokal duluan).
+  - `COMFYUI_IMAGE_SERVER_URL`: **sengaja ditunda** — user pilih fokus ke
+    free stock/archival sources dulu untuk niche dark history, ComfyUI+
+    Kaggle nanti kalau perlu generative image.
+- **Cara verifikasi `.env` yang WAJIB dipakai seterusnya** (lihat juga
+  poin 9 soal larangan cat isi `.env` mentah):
+  ```bash
+  grep -v '^#' .env | grep -v '^$' | awk -F'=' '{if ($2=="") print $1" -> KOSONG"; else print $1" -> TERISI"}'
+  ```
+  atau untuk cek satu variable spesifik: `grep -c "NAMA_VAR=." .env` (harus
+  keluar `1` kalau terisi).
+- **Free stock/archival sources untuk niche dark history — SUDAH LENGKAP,
+  TIDAK PERLU KODE TAMBAHAN.** Ditemukan (setelah sempat salah bikin
+  duplikat, lihat poin 9) bahwa `tools/video/stock_sources/` sudah berisi
+  semua adapter yang dibutuhkan, semua `is_available()` tanpa syarat
+  (kecuali Pexels/Pixabay yang butuh API key, sudah diisi; dan Mixkit yang
+  butuh `beautifulsoup4`, sudah diinstall manual dan dikonfirmasi
+  `MixkitSource().is_available() == True`):
+  - `pexels.py` (video), `pixabay_video.py` — B-roll modern generik
+  - `mixkit.py`, `coverr.py` — B-roll modern generik gratis tanpa key
+  - `wikimedia.py` (image+video), `loc.py` (Library of Congress, image+
+    video), `nara.py` (National Archives) — foto/dokumen/rekaman sejarah
+    asli, public domain, PALING relevan untuk dark history
+  - Lainnya (tidak terlalu relevan untuk niche ini tapi ada): `videvo.py`,
+    `dareful.py`, `pond5_pd.py`, `nasa.py`, `noaa.py`, `esa.py`, `jaxa.py`,
+    `unsplash.py`
+  - Priority yang SUDAH di-set di kode (tie-breaker untuk corpus selection,
+    bukan filter kaku — sistem fan-out ke semua source lalu ranking by
+    similarity+priority): LOC=40, NARA=35, Wikimedia=25, Mixkit=19 (yang
+    lain belum dicek satu-satu, tapi urutan yang ada sudah cocok secara
+    default untuk dark history: sumber otentik-historis diutamakan di atas
+    filler suasana generik).
+  - **`beautifulsoup4` diinstall manual via pip di Codespace, TIDAK
+    ditambahkan ke `requirements.txt`** (keputusan eksplisit user) — kalau
+    Codespace di-rebuild dari nol, ingat install ulang manual sebelum pakai
+    Mixkit.
+  - Rekaman 911/interogasi polisi (FOIA audio) yang sempat diminta user:
+    **TIDAK dibuatkan tool** — sifatnya beda dari source lain (bukan API
+    terpusat, kumpulan situs per-agency/per-state via permintaan FOIA
+    manual, rawan isu legal/false-positim public domain per-kasus). Dicatat
+    di sini kalau user tanya lagi nanti, bukan dianggap gap yang perlu
+    ditutup.
+- **Masih kosong/ditunda di `.env`** (tidak blocking untuk testing
+  pertama): `COMFYUI_IMAGE_SERVER_URL`, dan hampir semua provider
+  berbayar/opsional lain di `.env.example` (FAL, MiniMax, ElevenLabs,
+  OpenAI, dll) — pendekatan yang dipilih user adalah free-sources-first.
+- **STATUS: siap testing end-to-end.** Generate satu video penuh untuk
+  channel "The Forgotten Shadows" pakai stock sources gratis yang sudah
+  aktif, sampai ke tahap Telegram approval → YouTube upload. Ini next
+  action untuk sesi berikutnya.
+- **Belum diputuskan:** `category_id` YouTube upload (masih default `"22"`,
+  sepihak dari Claude, belum dikonfirmasi user — sama seperti status di
+  poin 8).
