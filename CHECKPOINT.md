@@ -14,6 +14,9 @@ jelas supaya tidak membingungkan pembaca berikutnya.
 end-to-end pertama.** Video test BELUM final, banyak bug ditemukan dan
 sebagian sudah di-fix — baca poin 11 sebelum lanjut kerja di project ini.
 
+**Update 22 September 2026 — lihat poin 12 untuk Hermes plugin stack dan
+pivot Cloudflare Workers AI image generation.**
+
 ---
 
 ## 0. Konteks environment user
@@ -719,3 +722,94 @@ NASKAH NARASI di rentang waktu itu (bukan generalisasi kaku):
   dikonfirmasi user) — sama seperti status sejak poin 8.
 - Investigasi root cause "Archive.org fiktif di manifest" ditunda/di-skip
   atas keputusan user, fokus ke perbaikan query saja.
+
+## 12. Sesi lanjutan (22 September 2026) — Hermes plugin stack + pivot Cloudflare Workers AI
+
+### Hermes plugin stack (diputuskan, sudah dikirim ke user untuk diinstall)
+Tiga plugin dipasang di Hermes Agent (bukan di repo OpenMontage sendiri —
+ini setting Hermes CLI, lintas-repo):
+1. **`obra/superpowers`** — framework skill agentic yang menegakkan alur
+   brainstorming → writing-plans → TDD (RED-GREEN-REFACTOR) → code review →
+   verification-before-completion. Install: `hermes plugins install
+   obra/superpowers --enable`, restart session Hermes setelahnya. Catatan:
+   Hermes tidak punya post-compaction hook — kalau sesi panjang ter-compact
+   melewati turn pertama, bootstrap skill ini hilang; kalau skill berhenti
+   ter-trigger, mulai sesi baru.
+2. **`DietrichGebert/ponytail`** — anti-over-engineering (YAGNI ladder: perlu
+   ada gak → reuse → stdlib → native → dependency → satu baris → minimum
+   yang perlu). Diukur -54% LOC, -20% cost, -27% waktu vs baseline tanpa
+   skill, tanpa tradeoff safety. Install: `hermes plugins install
+   DietrichGebert/ponytail --enable`. Saling melengkapi dengan caveman
+   (caveman memendekkan apa yang agent BILANG, ponytail memendekkan apa
+   yang agent BANGUN).
+3. **`JuliusBrussee/caveman`** (skill saja, bukan proxy) — balasan agent
+   lebih ringkas, ~65% lebih sedikit output token rata-rata (code/command/
+   path tidak pernah dipendekkan). Install: `npx skills add
+   JuliusBrussee/caveman`. Ketik `/caveman` manual kalau tidak auto-aktif.
+   Varian proxy (`caveman hermes`) SENGAJA di-skip dulu — overhead setup
+   lebih besar untuk workflow mobile-only, bisa direvisit nanti.
+- Dipertimbangkan tapi ditunda: `Egonex-AI/Understand-Anything` (tool
+  knowledge-graph/dashboard codebase) — berguna kalau `tools/` sudah makin
+  susah dinavigasi, belum diinstall.
+- Dipertimbangkan dan di-skip: `sickn33/agentic-awesome-skills` (katalog
+  2.400+ skill) — terlalu luas/tidak terverifikasi untuk kebutuhan
+  sekarang, juga terlalu berat token untuk di-browse penuh dalam sesi.
+
+### Pivot: Cloudflare Workers AI image generation (menggantikan stock sources)
+- **Keputusan**: setelah render test pertama (poin 11) mengecewakan karena
+  footage stock salah/tidak relevan, asset sourcing untuk "The Forgotten
+  Shadows" (niche dark history) pindah total ke Cloudflare Workers AI image
+  generation — **full replacement**, semua stock source lama (Wikimedia/
+  archive.org/Pexels/Pixabay/dst di `tools/video/stock_sources/`) TIDAK
+  dipertahankan sebagai fallback, akan dimatikan.
+- **Motivasi**: pola yang sama sedang/sudah dites di project WealthVault
+  (branch Cloudflare image-gen sendiri di `riy389/wealthvault-agent`).
+  Dikonfirmasi via `get_file_contents`: `cloudflare_beats.py` sudah ADA di
+  branch `main` WealthVault — pivot ini TIDAK LAGI diblokir menunggu
+  WealthVault (blocker itu sudah selesai per sesi ini).
+- **Model & API yang dikonfirmasi dari source WealthVault**:
+  `@cf/black-forest-labs/flux-2-klein-4b`, dipanggil via multipart/
+  form-data POST ke
+  `https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{model}`,
+  parameter `prompt`/`width`/`height`, response bisa JSON (`result.image`
+  base64) atau raw bytes tergantung `Content-Type`. Resolusi WealthVault:
+  768x1344 (rasio 9:16), ~117 neuron/gambar.
+- **Budget neuron Cloudflare**: 10.000/hari, **shared satu pool** antara
+  WealthVault dan OpenMontage (bukan kuota terpisah per project) — sama
+  seperti pola sharing Telegram bot dan YouTube OAuth Client ID/Secret
+  sebelumnya. Konsekuensi: pemakaian di satu project mengurangi budget
+  project lain di hari yang sama.
+- **Sudah dikerjakan & di-push ke `main` OpenMontage** (sesi ini):
+  1. `tools/graphics/cloudflare_image.py` (commit `444bec7`) — tool baru,
+     mengikuti pola `BaseTool` yang sama persis dengan `flux_image.py`
+     (`tools/graphics/`), tier `GENERATE`, capability `image_generation`,
+     provider `cloudflare`. Baca kredensial dari `CLOUDFLARE_ACCOUNT_ID`/
+     `CLOUDFLARE_API_TOKEN`. `get_status()` return `UNAVAILABLE` kalau
+     salah satu env var kosong. `estimate_cost()` selalu `0.0` (dibilling
+     neuron, bukan USD). Auto-discovered oleh `tool_registry.py`
+     (`pkgutil.walk_packages`) — tidak perlu registrasi manual.
+  2. `.env.example` (commit `eeef082`) — ditambah section baru
+     `--- Cloudflare Workers AI ---` (ditaruh setelah section "Image +
+     video gateway"/fal.ai, sebelum MiniMax) berisi `CLOUDFLARE_API_TOKEN`
+     dan `CLOUDFLARE_ACCOUNT_ID`.
+- **Keputusan penamaan env var**: dipakai `CLOUDFLARE_ACCOUNT_ID`/
+  `CLOUDFLARE_API_TOKEN` (SAMA PERSIS dengan nama variable di WealthVault),
+  BUKAN `CF_ACCOUNT_ID`/`CF_API_TOKEN` yang sempat disebut sebagai
+  kemungkinan nama di sesi sebelumnya (poin 11 belum ditulis soal ini,
+  tapi ini koreksi dari rencana awal) — supaya kredensial Cloudflare yang
+  sama bisa dipakai lintas `.env` kedua project tanpa perlu mapping nama.
+- **`.env` di Codespaces OpenMontage sudah diisi** — `CLOUDFLARE_API_TOKEN`
+  dan `CLOUDFLARE_ACCOUNT_ID` dikonfirmasi user TERISI via command grep+awk
+  di atas (bukan value di-cat mentah, sesuai aturan poin 9/10). Tool
+  `cloudflare_image` sekarang `AVAILABLE` di Codespace, tinggal `git pull`
+  untuk narik `cloudflare_image.py` + `.env.example` terbaru dari `main`.
+- **BELUM dikerjakan (next action)**:
+  1. Matikan/nonaktifkan stock sources lama di `tools/video/stock_sources/`
+     (full replacement, bukan dipertahankan sebagai fallback) — belum
+     diputuskan detail teknisnya (hapus file vs disable via config/
+     priority vs comment out registrasi) di sesi ini, perlu dibahas
+     sebelum eksekusi.
+  2. Wiring `cloudflare_image` ke stage pipeline yang relevan (asset stage
+     `documentary-montage`, kemungkinan juga pipeline lain) — menggantikan
+     panggilan ke stock sources/`flux_image` yang ada sekarang. Belum
+     disentuh sama sekali di sesi ini, murni tool baru + env var dulu.
