@@ -53,7 +53,7 @@ clip with full provenance.
 |-------|----------|---------|
 | Schema | `schemas/artifacts/asset_manifest.schema.json` | Artifact validation |
 | Prior artifact | `state.artifacts["scene_plan"]["scene_plan"]` | Slot descriptions + queries + preferred_sources |
-| Prior artifact | `state.artifacts["idea"]["brief"]` | `era_mix`, `sources_allowed`, `music_plan` |
+| Prior artifact | `state.artifacts["idea"]["brief"]["metadata"]` | `era_mix`, `sources_allowed`, `music_plan` — documentary-montage-specific fields live under `brief.metadata`, not the brief's top level |
 | Tool (fast path) | `direct_clip_search` | Lightweight multi-provider search + download |
 | Tool (standard path) | `corpus_builder` | Populates the retrieval index with CLIP embeddings |
 | Tool (standard path) | `clip_search` | Ranks clips against slot descriptions |
@@ -239,9 +239,10 @@ corpus_builder.execute({
   ~150 candidates so retrieval has real choices.
 - `per_source` of 4-8 per query is usually enough. Pushing to 20+
   mostly adds noise.
-- If `era_mix = "vintage"`, run a separate fan-out restricted to
-  `["archive_org"]` with period-appropriate queries. Prelinger search
-  is slow — don't interleave it with the modern Pexels batch.
+- If `brief.metadata.era_mix = "vintage"`, run a separate fan-out
+  restricted to `["archive_org"]` with period-appropriate queries.
+  Prelinger search is slow — don't interleave it with the modern
+  Pexels batch.
 - If any slot has `nasa` in `preferred_sources`, run ONE small
   `nasa`-only batch. NASA is slow and its results are niche.
 - `unsplash` is image-only. Use it as a support source, not the
@@ -364,8 +365,8 @@ visually identical. Re-rank the slot whose clip got dropped with
 
 ### 8. Handle The Music Plan
 
-Read `brief.music_plan`. Execute exactly the plan the idea director
-recorded — do not invent a new source here:
+Read `brief.metadata.music_plan`. Execute exactly the plan the idea
+director recorded — do not invent a new source here:
 
 - **`source=library`**: Verify the file at `music_plan.path` exists.
   Record it in the asset manifest as `type=music`, `subtype=library`.
@@ -443,8 +444,8 @@ pick feels wrong and needs to reach for the #2 option.
 - `diversify` ran clean on the final list (no dropped picks, or all
   dropped picks were re-filled).
 - `corpus_stats` shows at least 8x the slot count in rows.
-- Music asset exists OR `music_plan.source = "none"` with explicit
-  acknowledgement.
+- Music asset exists OR `brief.metadata.music_plan.source = "none"`
+  with explicit acknowledgement.
 - For vintage briefs, at least 60% of picks come from `archive_org`.
 - All file paths resolve.
 
@@ -471,6 +472,10 @@ pick feels wrong and needs to reach for the #2 option.
 - **Losing provenance.** Every clip must carry `provider`,
   `original_url`, and `license` in the manifest. These are the
   non-negotiables for any downstream publishing step.
+- **Reading brief fields from the top level instead of `metadata`.**
+  This pipeline's brief keeps `era_mix`, `sources_allowed`,
+  `music_plan`, etc. under `brief.metadata` — see `idea-director.md`'s
+  "A Note On The Brief's Shape".
 
 ## Retrieval Recipes
 
