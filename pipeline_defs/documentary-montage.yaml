@@ -32,6 +32,7 @@ extensions:
 required_skills:
   - pipelines/documentary-montage/executive-producer
   - pipelines/documentary-montage/idea-director
+  - pipelines/documentary-montage/script-director
   - pipelines/documentary-montage/scene-director
   - pipelines/documentary-montage/asset-director
   - pipelines/documentary-montage/edit-director
@@ -56,17 +57,39 @@ stages:
       - Duration and shape are concrete
       - Music plan is present (MANDATORY — silent only if user explicitly opted out)
       - End-tag plan is present (MANDATORY — one philosophical closing line, rendered as Remotion end-card, default mode "overlay" on final scenes, unless user explicitly opted out)
-      - Narration plan is present (narration itself is OPTIONAL — absence is fine if music + visuals + end-tag carry the register)
+      - Narration plan is present (MANDATORY for this pipeline — narration drives per-beat slot timing in scene_plan; silent-only is an explicit user opt-out, not a default)
+      - If duration_seconds targets a long-form runtime (~7-8+ minutes), the topic has been checked for enough natural narrative material to sustain that length without padding or repetition
     success_criteria:
       - Schema-valid brief artifact
       - thematic_question present in metadata
       - music_plan present in metadata (source may be `none` ONLY with explicit user opt-out note)
       - end_tag_plan present in metadata (text, palette, duration, mode — may be `null` ONLY with explicit user opt-out note)
+      - narration present in metadata (provider/voice, OR `none` ONLY with explicit user opt-out note)
+
+  - name: script
+    skill: pipelines/documentary-montage/script-director
+    required_artifacts_in:
+      - brief
+    produces:
+      - script
+    tools_available: []
+    checkpoint_required: true
+    human_approval_default: true
+    review_focus:
+      - Narration text covers the brief's thematic question and duration
+      - Script is split into sections (beats) with id, text, start_seconds, end_seconds
+      - Estimated timing uses a stated words-per-second rate appropriate to the brief's tone
+      - total_duration_seconds is within 10% of brief.duration_seconds
+    success_criteria:
+      - Schema-valid script artifact
+      - sections[] present, each with non-empty text and start/end seconds
+      - total_duration_seconds present and consistent with sum of section spans
 
   - name: scene_plan
     skill: pipelines/documentary-montage/scene-director
     required_artifacts_in:
       - brief
+      - script
     produces:
       - scene_plan
     tools_available: []
@@ -76,11 +99,15 @@ stages:
       - Slot descriptions use concrete noun-and-adjective language
       - Every slot has 2-3 short search queries
       - At least 2 slots are marked hero
-      - Slot count and target holds match the tone/duration math
+      - Every scene/slot carries a script_section_id tracing it back to a script beat
+      - Every script section is covered by at least one scene (beat may map to 1-3 scenes)
+      - Slot count and target holds are derived from script section timings, not a fixed tone table
       - era_mix is reflected in preferred_sources distribution
     success_criteria:
       - Schema-valid scene_plan artifact
       - metadata.slots[] present with per-slot queries and preferred_sources
+      - Every scene has a non-empty script_section_id
+      - Every script.sections[] id is referenced by at least one scene
       - Sum of target_hold_seconds within 10% of brief.duration_seconds
 
   - name: assets
