@@ -15,7 +15,7 @@ good as the slot descriptions you write.
 | Layer | Resource | Purpose |
 |-------|----------|---------|
 | Schema | `schemas/artifacts/scene_plan.schema.json` | Artifact validation |
-| Prior artifact | `state.artifacts["idea"]["brief"]` | Thematic question, tone, duration, shape |
+| Prior artifact | `state.artifacts["idea"]["brief"]["metadata"]` | Thematic question, tone, duration, shape — documentary-montage-specific fields live under `brief.metadata`, not the brief's top level |
 | Prior artifact | `state.artifacts["script"]["script"]` | Narration sections (beats) with timing — drives slot count and duration |
 | Reference | `skills/pipelines/documentary-montage/executive-producer.md` | Cross-stage rules |
 | Tools | none yet — this stage is pure planning | — |
@@ -77,8 +77,8 @@ production (rare at first pass, more common on a re-plan) and
 the section's estimated `start_seconds`/`end_seconds` — real spoken
 duration always overrides the script stage's word-count estimate.
 
-Then plan the arc according to `brief.shape` (still relevant for
-overall pacing judgement, e.g. where hero moments land):
+Then plan the arc according to `brief.metadata.shape` (still relevant
+for overall pacing judgement, e.g. where hero moments land):
 
 - **list**: scenes carry roughly even visual weight, no inflection.
 - **before/after**: earlier sections establish, a pivot section turns,
@@ -167,8 +167,8 @@ each. No filler words.
 
 ### 5. Target Sources Per Slot (Era-Aware)
 
-Read `brief.era_mix`. Assign each slot one or more `preferred_sources`
-based on what footage lives where:
+Read `brief.metadata.era_mix`. Assign each slot one or more
+`preferred_sources` based on what footage lives where:
 
 | Source | Strengths | Use when |
 |--------|-----------|----------|
@@ -198,10 +198,10 @@ decides which slot gets which source based on the beat's meaning.
 
 #### Children's / Fairy-Tale Content
 
-When the brief's `tone` or `target_audience` indicates children's
-content (fairy tale, bedtime story, kids' explainer, animated story),
-**switch the visual strategy from real footage to AI-generated fantasy
-clips on Pixabay**.
+When the brief's `metadata.tone` or `metadata.target_audience`
+indicates children's content (fairy tale, bedtime story, kids'
+explainer, animated story), **switch the visual strategy from real
+footage to AI-generated fantasy clips on Pixabay**.
 
 Pixabay's community library contains thousands of AI-generated fantasy
 animations (glowing forests, enchanted landscapes, magical creatures)
@@ -321,13 +321,15 @@ plus a matching `script_section_id` for traceability.
   no emotion words, no verbs of intention.
 - Every slot has 2-3 short queries (5 words or fewer each).
 - At least 2 slots are marked `hero`.
-- Sum of `target_hold_seconds` is within ±10% of `brief.duration_seconds`
-  AND, per section, roughly matches that section's own
-  `(end_seconds - start_seconds)` span from the script.
+- Sum of `target_hold_seconds` is within ±10% of
+  `brief.metadata.duration_seconds` AND, per section, roughly matches
+  that section's own `(end_seconds - start_seconds)` span from the
+  script.
 - If `era_mix = "vintage"`, at least 60% of slots list `archive_org`
   in `preferred_sources`.
-- `metadata.thematic_question` echoes the brief verbatim (sanity check
-  that you didn't drift).
+- This artifact's own `metadata.thematic_question` echoes
+  `brief.metadata.thematic_question` verbatim (sanity check that you
+  didn't drift).
 
 ## Common Pitfalls
 
@@ -352,6 +354,10 @@ plus a matching `script_section_id` for traceability.
   home" and your slot list has three shots of airplanes, the piece
   will be about travel, not home. Re-read the brief and script after
   drafting.
+- **Reading brief fields from the top level instead of `metadata`.**
+  This pipeline's brief keeps `thematic_question`, `duration_seconds`,
+  `era_mix`, etc. under `brief.metadata` — see `idea-director.md`'s
+  "A Note On The Brief's Shape".
 
 ## Worked Example — "A Minute in the Rain"
 
