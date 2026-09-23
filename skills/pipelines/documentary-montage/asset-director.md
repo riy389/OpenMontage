@@ -126,7 +126,7 @@ parallel:
 
 ```python
 direct_clip_search.execute({
-    "output_dir": "projects/<name>/assets/video/raw_act2",
+    "output_dir": "projects/<n>/assets/video/raw_act2",
     "queries": [
         {"query": "cesium atomic clock laboratory", "slot_id": "slot_01"},
         {"query": "laser beam laboratory optics",   "slot_id": "slot_02"},
@@ -211,7 +211,7 @@ Call `corpus_builder.execute(...)` with one fan-out per source set:
 ```python
 # Example shape. The agent constructs this from the shot list.
 corpus_builder.execute({
-    "corpus_dir": "projects/<name>/corpus",
+    "corpus_dir": "projects/<n>/corpus",
     "queries": [
         {"query": "raindrop on asphalt slow motion", "kind": "video", "per_source": 8},
         {"query": "wet city street night neon",       "kind": "video", "per_source": 8},
@@ -255,7 +255,7 @@ Before spending tokens on slot picks, call `clip_search` with
 ```python
 clip_search.execute({
     "operation": "stats",
-    "corpus_dir": "projects/<name>/corpus",
+    "corpus_dir": "projects/<n>/corpus",
 })
 ```
 
@@ -277,7 +277,7 @@ with `operation=rank_for_slot`:
 ```python
 clip_search.execute({
     "operation": "rank_for_slot",
-    "corpus_dir": "projects/<name>/corpus",
+    "corpus_dir": "projects/<n>/corpus",
     "query_text": slot["description"],      # NOT slot["queries"] — the description is richer
     "k": 30 if slot.get("hero") else 12,
     "tag_weight": 0.3,
@@ -306,7 +306,8 @@ judge each one against:
 
 - **Era fit.** Does a 2022 4K Pexels shot belong in an elegiac list
   montage about home? Maybe. Maybe not.
-- **Motion fit.** The tone table from the scene director tells you
+- **Motion fit.** The scene director's `target_hold_seconds` for this
+  slot (derived from its script section's narration timing) tells you
   how long the hold will be. If the clip has a 4.0s hold target and
   the clip is 2s long with a fast whip pan, it won't stretch.
 - **Compositional carry.** Will this clip work NEXT to the clips
@@ -350,7 +351,7 @@ timeline order. Visually-redundant adjacent shots kill the edit. Run
 ```python
 clip_search.execute({
     "operation": "diversify",
-    "corpus_dir": "projects/<name>/corpus",
+    "corpus_dir": "projects/<n>/corpus",
     "candidate_ids": picked_ids_in_timeline_order,
     "n": len(picked_ids_in_timeline_order),
     "diversity": 0.5,
@@ -392,7 +393,7 @@ montage-specific fields live in `metadata`:
     {
       "id": "asset_slot_01",
       "type": "video",
-      "path": "projects/<name>/corpus/clips/pexels_12345/video.mp4",
+      "path": "projects/<n>/corpus/clips/pexels_12345/video.mp4",
       "source_tool": "corpus_builder",
       "scene_id": "slot_01",
       "duration_seconds": 7.2,
@@ -416,7 +417,7 @@ montage-specific fields live in `metadata`:
   ],
   "metadata": {
     "pipeline": "documentary-montage",
-    "corpus_dir": "projects/<name>/corpus",
+    "corpus_dir": "projects/<n>/corpus",
     "corpus_stats": { "rows": 157, "per_source": {"pexels": 98, "archive_org": 52, "nasa": 7} },
     "rejected_picks": [
       {
@@ -480,7 +481,7 @@ A few retrieval moves that come up often:
 ```python
 clip_search.execute({
     "operation": "find_similar_set",
-    "corpus_dir": "projects/<name>/corpus",
+    "corpus_dir": "projects/<n>/corpus",
     "seed_clip_id": "pexels_12345",
     "n": 5,
     "diversity": 0.4,
@@ -496,7 +497,7 @@ catalogue of doorways all filmed in the same register.
 ```python
 clip_search.execute({
     "operation": "diversify",
-    "corpus_dir": "projects/<name>/corpus",
+    "corpus_dir": "projects/<n>/corpus",
     "candidate_ids": [...],
     "n": 8,
     "diversity": 0.5,
@@ -508,7 +509,7 @@ clip_search.execute({
 ```python
 clip_search.execute({
     "operation": "get",
-    "corpus_dir": "projects/<name>/corpus",
+    "corpus_dir": "projects/<n>/corpus",
     "clip_id": "archive_org_Prelinger_HomeMovies_0042",
 })
 ```
