@@ -65,6 +65,7 @@ Duration matters because it caps the number of beats.
 | 30-45s | 8-12 cuts | Social/Instagram/reel — one feeling, no arc |
 | 60-90s | 15-25 cuts | Standard short — mini arc with a turn |
 | 2-3 min | 30-50 cuts | Proper essay montage — 3-act arc possible |
+| 7-8+ min | 60-100+ cuts | Long-form (mid-roll-ads-eligible) — needs real narrative depth, see Topic-Viability Check below |
 
 Shape options:
 
@@ -76,6 +77,33 @@ Shape options:
   >90s)
 - **list/catalogue** — "everyone who..." structure, no arc, just
   accumulation (good for reverent or elegiac)
+
+#### Topic-Viability Check (MANDATORY for long-form targets)
+
+If `duration_seconds` targets a long-form runtime (roughly 7-8+
+minutes), do NOT assume the topic can naturally sustain it. A topic
+that only has 90 seconds of real story will not become an 8-minute
+video by padding — it becomes a repetitive, thin one.
+
+Before locking the brief, check:
+
+- Can you list enough distinct concrete beats (events, turns,
+  figures, consequences) to fill the target duration without
+  repeating the same point in different words?
+- Does the topic have a natural arc (setup → complication →
+  consequence) at this length, or does it plateau after 2-3 minutes
+  of material?
+- If you're already struggling to sketch beats past the halfway
+  point, the topic is too thin for this duration.
+
+If the topic can't sustain the target length naturally:
+
+- Say so explicitly to the user.
+- Offer either a shorter duration that fits the material, or a
+  different/broader topic angle that has enough depth (e.g. widen
+  from a single incident to its aftermath and legacy).
+- Do NOT silently proceed with a thin topic at a long duration and
+  let padding/repetition surface later at the script stage.
 
 ### 4. Note Music Intent (MANDATORY)
 
@@ -147,12 +175,29 @@ Fields:
   - **concat**: tag rendered as opaque MP4 → appended after body via
     FFmpeg concat. Total output duration = body + tag.
 
-### 6. Note Narration Intent (OPTIONAL)
+### 6. Note Narration Intent (MANDATORY)
 
-Unlike music and end-tag, narration is OPTIONAL. Absence is fine if
-visuals + music + end-tag carry the register. If narration IS used, name
-the TTS provider and voice. Record `narration: "none"` explicitly if
-there's no narration — don't leave the field missing.
+**Narration is MANDATORY for this pipeline.** Documentary montage without
+narration relies entirely on visuals + music + end-tag to carry meaning,
+and repeated production experience on this pipeline has shown that
+stock/archival footage alone does not reliably communicate what a piece
+is about — viewers need to be told the story, not just shown fragments
+of it.
+
+Name the TTS provider and voice. The narration language is fixed per
+channel (check `skills/pipelines/documentary-montage/executive-producer.md`
+or channel-level notes for the required language — do not assume).
+
+**The ONLY way out is an explicit user opt-out**, e.g. "no narration,
+I want it silent/tone-poem" — which MUST be recorded as
+`narration: "none"` with a `narration_opt_out_reason` field. Do not
+leave the field missing, and do not default to no-narration just
+because the user didn't bring it up — ask.
+
+When narration is used (the default), a downstream `script` stage
+writes the full narration text before scene planning begins — you do
+not write narration text here, only the intent (provider, voice,
+language, opt-out or not).
 
 ### 7. Record The Brief
 
@@ -167,7 +212,11 @@ Minimum fields the brief must carry:
   "shape": "list",
   "sources_allowed": ["pexels", "pixabay_video", "coverr", "mixkit", "archive_org", "nara", "nasa"],
   "generated_clips_allowed": false,
-  "narration": "none",
+  "narration": {
+    "provider": "elevenlabs",
+    "voice": "warm_documentary_male",
+    "language": "en"
+  },
   "music_plan": {
     "source": "generated",
     "provider": "elevenlabs",
@@ -194,10 +243,15 @@ open for the scene director to decide per slot.
 - Thematic question is ONE sentence.
 - Tone is ONE register from the fixed list.
 - Duration and shape are concrete numbers / enum values.
+- If duration targets long-form (~7-8+ minutes), the Topic-Viability
+  Check has been performed and the topic has enough natural material,
+  OR the duration/topic was adjusted after the check.
 - `music_plan` is present AND either names a real source OR has
   `source: "none"` + `opt_out_reason` (explicit user decision).
 - `end_tag_plan` is present AND either has a non-empty `text` OR is
   `null` with `end_tag_opt_out_reason` (explicit user decision).
+- `narration` is present AND either names provider/voice/language OR
+  is `"none"` with `narration_opt_out_reason` (explicit user decision).
 - Sources list is non-empty and at least one requested source is
   `available` per `corpus_builder.source_provider_menu` surfaced in
   preflight.
@@ -209,9 +263,15 @@ open for the scene director to decide per slot.
 - Jumping to shot lists. The brief is about MEANING. Shots come next.
 - Ignoring duration. A 45s piece with 50 cuts is nausea. A 3-minute
   piece with 12 cuts is a slideshow.
+- Assuming a topic can stretch to fill a long-form duration just
+  because the user asked for that length. Run the Topic-Viability
+  Check — a thin topic padded to 8 minutes reads as repetitive, not
+  thorough.
 - Forgetting to ask about music. The user usually has an opinion.
 - Assuming silence will earn itself. It won't. Music is mandatory unless
   the user explicitly says no.
+- Assuming no narration is wanted because the user didn't mention it.
+  Narration is mandatory unless the user explicitly opts out.
 - Skipping the end-tag because "the images speak for themselves". They
   don't — the end-tag is the thesis. Propose one every time.
 
