@@ -2,10 +2,10 @@
 
 ## When To Use
 
-The brief exists. You now have to turn a thematic question into a
-concrete list of SLOTS the retrieval layer can fill. Each slot is an
-intention ("a silhouette at a doorway at dusk") plus the queries that
-will find it in the real world (Pexels/Archive.org/NASA/Wikimedia/Unsplash).
+The brief AND the script exist. You now have to turn the narration's
+beats into a concrete list of SLOTS the retrieval layer can fill. Each
+slot is an intention ("a silhouette at a doorway at dusk") plus the
+queries that will find it in the real world (Pexels/Archive.org/NASA/Wikimedia/Unsplash).
 
 This is the most creative stage in the pipeline. Retrieval is only as
 good as the slot descriptions you write.
@@ -16,6 +16,7 @@ good as the slot descriptions you write.
 |-------|----------|---------|
 | Schema | `schemas/artifacts/scene_plan.schema.json` | Artifact validation |
 | Prior artifact | `state.artifacts["idea"]["brief"]` | Thematic question, tone, duration, shape |
+| Prior artifact | `state.artifacts["script"]["script"]` | Narration sections (beats) with timing — drives slot count and duration |
 | Reference | `skills/pipelines/documentary-montage/executive-producer.md` | Cross-stage rules |
 | Tools | none yet — this stage is pure planning | — |
 
@@ -36,57 +37,84 @@ category label CLIP will match weakly and indiscriminately.
 
 ## Process
 
-### 1. Turn The Shape Into A Beat Count
+### 1. Turn The Script's Beats Into Scenes
 
-Read the brief's `duration_seconds` and `shape`. Derive the number of
-slots. Use these defaults unless the tone says otherwise:
+Slot count and duration are now derived from the `script` artifact's
+`sections[]`, not from a fixed tone-based table. Read every section:
+its `text`, its `(end_seconds - start_seconds)` span, and its
+`delivery_cues` if present.
 
-| Tone | Average hold | Slots per 60s |
-|------|--------------|---------------|
-| elegiac | 4.0s | ~15 |
-| reverent | 3.5s | ~17 |
-| dreamlike | 3.0s | ~20 |
-| wry | 2.0s | ~30 |
-| urgent | 1.2s | ~50 |
+**Beat ≠ scene.** A script section is a unit of story; a scene/slot is
+a unit of visual planning. They are related, not identical:
 
-Then plan the arc according to shape:
+- A short, punchy beat (a single action line, a few seconds of
+  narration) usually becomes **one** scene, possibly held with a slow
+  Ken Burns pan/zoom rather than cut again.
+- A longer, denser beat (multiple images or turns described in one
+  breath) can become **two or three** scenes, splitting the beat's
+  duration across them.
+- Do not mechanically force one beat = one image. Read the beat and
+  judge how many distinct visual moments it actually contains.
 
-- **list**: N uniform slots, no inflection.
-- **before/after**: N/2 before slots + 1 pivot slot + N/2 after slots.
-- **three-act**: setup (30%) → turn (40%) → release (30%).
-- **single-image expansion**: 1 anchor image + N variations around it.
+For each scene you create, set `script_section_id` to the id of the
+script section it comes from (this field already exists in
+`scene_plan.schema.json`). If a beat becomes 3 scenes, all 3 carry the
+same `script_section_id`.
 
-Write the beat count down before writing any slot.
+**Coverage rule:** every section in `script.sections[]` must be
+represented by at least one scene. No beat gets silently dropped.
 
-### 2. Decompose The Thematic Question Into Concrete Beats
+**Duration rule:** the sum of scenes' `target_hold_seconds` mapped to a
+given section should sum to roughly that section's
+`(end_seconds - start_seconds)` — not the old tone-table average hold.
+A section that runs 8 seconds and becomes 2 scenes might split 5s/3s
+depending on which half carries more visual weight; it should not
+mechanically split 4s/4s if the beat's content doesn't support that.
 
-Take the ONE thematic question from the brief and answer it in
-sensory language. Not themes — textures.
+If `script` audio has already been generated at this point in
+production (rare at first pass, more common on a re-plan) and
+`audio_duration_seconds` is available per section, use that instead of
+the section's estimated `start_seconds`/`end_seconds` — real spoken
+duration always overrides the script stage's word-count estimate.
 
-**Example — "What does rain show you about a city?"**
+Then plan the arc according to `brief.shape` (still relevant for
+overall pacing judgement, e.g. where hero moments land):
+
+- **list**: scenes carry roughly even visual weight, no inflection.
+- **before/after**: earlier sections establish, a pivot section turns,
+  later sections resolve.
+- **three-act**: setup sections (~30%) → turn sections (~40%) →
+  release sections (~30%), by time, following the script's own arc.
+- **single-image expansion**: an anchor section's scene(s) recur
+  visually across later sections' scenes.
+
+Write the scene count down (and which script section each maps to)
+before writing any slot description.
+
+### 2. Decompose Each Beat Into Concrete Visual Language
+
+Take each script section's `text` and translate it into sensory
+language for its scene(s). Not themes — textures.
+
+**Example — script section: "A single woman began to dance in the
+street, and could not stop."**
 
 Bad decomposition (abstract, unsearchable):
 
-- "establishing the mood of the city"
-- "the feeling of being caught in weather"
-- "the universality of rain"
+- "establishing the mood of the plague"
+- "the feeling of losing control"
 
 Good decomposition (concrete, searchable):
 
-- a single raindrop hitting dry asphalt in slow motion
-- an umbrella opening in a doorway, a hand visible
-- neon signs reflected upside-down in a puddle
-- rain streaking across a bus window, passengers soft
-- a taxi roof light pushing through heavy rain, long lens
-- a storm drain swallowing leaves and water, overhead
-- a street vendor pulling plastic over a produce cart
-- steam rising off wet cobblestones under tungsten streetlight
-- a child's rubber boot stamping into a puddle
-- a lit apartment window seen through sheets of rain
+- a woman's feet in worn shoes, moving rhythmically on cobblestone,
+  slight motion blur
+- a lone figure silhouetted against a narrow medieval street, evening
+  light
+- hands clasped, wringing, in the foreground while a blurred figure
+  moves behind
 
-Each of those is a SHOT. Each is CLIP-rankable. Each is also *a
-different angle on the same idea*, which is what gives a list-shaped
-montage its weight.
+Each of those is a SHOT tied to what the narration is actually saying
+at that timestamp. Each is CLIP-rankable.
 
 ### 3. Write The Slot Description
 
@@ -211,7 +239,7 @@ slot metadata.
 
 Hero slots get:
 
-- longer holds (2-4s instead of the tone's default),
+- longer holds (relative to their script section's other scenes),
 - bigger candidate pools at asset time (k=30 instead of k=10),
 - more queries (3 instead of 2).
 
@@ -242,6 +270,7 @@ For this pipeline, put documentary-montage-specific fields inside
       "description": "a single raindrop hitting dry asphalt, close up, slow motion, warm streetlamp glow",
       "start_seconds": 0.0,
       "end_seconds": 3.5,
+      "script_section_id": "s1",
       "narrative_role": "establish_context",
       "hero_moment": true,
       "texture_keywords": ["wet", "slow motion", "streetlamp"],
@@ -258,6 +287,7 @@ For this pipeline, put documentary-montage-specific fields inside
     "slots": [
       {
         "id": "slot_01",
+        "script_section_id": "s1",
         "description": "a single raindrop hitting dry asphalt, close up, slow motion, warm streetlamp glow",
         "hero": true,
         "preferred_sources": ["pexels", "archive_org"],
@@ -275,19 +305,25 @@ For this pipeline, put documentary-montage-specific fields inside
 }
 ```
 
-The `scenes[]` array satisfies the schema. The `metadata.slots[]`
-array is what the asset director actually reads — it carries the
-retrieval-specific fields (`queries`, `preferred_sources`, `hero`,
-`era_hint`) that `scene_plan.schema.json` doesn't know about.
+The `scenes[]` array satisfies the schema and carries `script_section_id`
+directly (the field already exists in `scene_plan.schema.json`). The
+`metadata.slots[]` array is what the asset director actually reads — it
+carries the retrieval-specific fields (`queries`, `preferred_sources`,
+`hero`, `era_hint`) that `scene_plan.schema.json` doesn't know about,
+plus a matching `script_section_id` for traceability.
 
 ### 9. Quality Gate
 
-- Slot count matches the beat-count math from step 1.
+- Every `script.sections[]` id is referenced by at least one scene's
+  `script_section_id` — no beat silently dropped.
+- Every scene has a non-empty `script_section_id`.
 - Every slot `description` follows the noun-and-adjective template —
   no emotion words, no verbs of intention.
 - Every slot has 2-3 short queries (5 words or fewer each).
 - At least 2 slots are marked `hero`.
-- Sum of `target_hold_seconds` is within ±10% of `brief.duration_seconds`.
+- Sum of `target_hold_seconds` is within ±10% of `brief.duration_seconds`
+  AND, per section, roughly matches that section's own
+  `(end_seconds - start_seconds)` span from the script.
 - If `era_mix = "vintage"`, at least 60% of slots list `archive_org`
   in `preferred_sources`.
 - `metadata.thematic_question` echoes the brief verbatim (sanity check
@@ -303,48 +339,55 @@ retrieval-specific fields (`queries`, `preferred_sources`, `hero`,
   nothing. Push for concrete nouns: door, mat, key, hall, shoe.
 - **One-query slots.** The second query is cheap insurance — if the
   first query returns junk, the corpus still has something usable.
-- **Forgetting duration math.** 90 elegiac seconds is ~15 holds of
-  ~6s. If you wrote 40 slots, you've drafted an urgent piece by
-  accident.
+- **Forcing one beat = one image, or the reverse.** A dense beat held
+  to a single static image feels flat; a thin beat split into 3 nearly
+  identical scenes wastes image-generation budget. Read the beat and
+  decide.
+- **Dropping a beat.** Every script section needs at least one scene.
+  If a beat feels visually redundant with an earlier one, that's a
+  script-stage problem to flag, not a reason to silently skip it here.
 - **Skipping `era_hint` on a vintage brief.** Pexels will flood the
   corpus with 2020s HD footage and bury the Prelinger material.
 - **Letting the thematic question drift.** If the brief says "coming
   home" and your slot list has three shots of airplanes, the piece
-  will be about travel, not home. Re-read the brief after drafting.
+  will be about travel, not home. Re-read the brief and script after
+  drafting.
 
 ## Worked Example — "A Minute in the Rain"
 
-- Duration: 90s, elegiac tone → ~15 slots at ~6s each.
+- Duration: 90s, elegiac tone.
 - Shape: list (catalogue of weather + city).
 - Thematic question: "What does rain show you about a city?"
+- Script has ~14 sections at ~6-7s each (from the script stage).
 
-Sketch of slots (abbreviated):
+Sketch of scenes (abbreviated, one per script section unless a section
+is dense enough to split):
 
-1. **hero** single raindrop hitting dry asphalt, slow motion
-2. umbrella opening in a doorway, diffused afternoon light
-3. neon sign reflected upside-down in a puddle, handheld
-4. rain streaking across a bus window, passengers soft focus
-5. a taxi roof light pushing through heavy rain, long lens
-6. storm drain swallowing leaves and water, overhead
-7. a street vendor pulling plastic over a produce cart
-8. wet cobblestone alley, steam rising, tungsten streetlamp
-9. rooftop antennae against a grey sky, wide shot
-10. a child's rubber boot stamping a puddle, low angle
-11. **hero** a lit apartment window seen through sheets of rain
-12. windshield wipers at night, colored city lights beyond
-13. rain beading on a parked bicycle seat, macro
-14. footprints filling with water on a tiled station floor
-15. **hero** first patch of blue sky breaking through grey clouds
+1. **hero** (s1) single raindrop hitting dry asphalt, slow motion
+2. (s2) umbrella opening in a doorway, diffused afternoon light
+3. (s3) neon sign reflected upside-down in a puddle, handheld
+4. (s4) rain streaking across a bus window, passengers soft focus
+5. (s5) a taxi roof light pushing through heavy rain, long lens
+6. (s6) storm drain swallowing leaves and water, overhead
+7. (s7) a street vendor pulling plastic over a produce cart
+8. (s8) wet cobblestone alley, steam rising, tungsten streetlamp
+9. (s9) rooftop antennae against a grey sky, wide shot
+10. (s10) a child's rubber boot stamping a puddle, low angle
+11. **hero** (s11) a lit apartment window seen through sheets of rain
+12. (s12) windshield wipers at night, colored city lights beyond
+13. (s13) rain beading on a parked bicycle seat, macro
+14. **hero** (s14) first patch of blue sky breaking through grey clouds
 
-Each slot gets:
+Each scene gets:
 
+- `script_section_id` pointing back to its script beat,
 - `description` in the noun-and-adjective template,
 - 2-3 short queries (e.g. slot 5: `"taxi heavy rain", "yellow cab
   wet street night", "city traffic downpour"`),
 - `preferred_sources` (slots 1-6 → pexels+archive_org, slot 8 →
   archive_org for period texture, slot 11 → pexels),
-- `hero: true` on slots 1, 11, 15,
-- `target_hold_seconds` summing to ~90.
+- `hero: true` on slots 1, 11, 14,
+- `target_hold_seconds` matching its script section's timed span.
 
 This is the artifact the asset director will run retrieval against.
 
