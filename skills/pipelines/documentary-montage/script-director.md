@@ -18,26 +18,28 @@ or padded script produces a vague or padded video.
 | Layer | Resource | Purpose |
 |-------|----------|---------|
 | Schema | `schemas/artifacts/script.schema.json` | Artifact validation |
-| Prior artifact | `state.artifacts["idea"]["brief"]` | Thematic question, tone, duration, shape, narration provider/voice/language |
+| Prior artifact | `state.artifacts["idea"]["brief"]["metadata"]` | Thematic question, tone, duration, shape, narration provider/voice/language — all documentary-montage-specific fields live under `brief.metadata`, not the brief's top level |
 
 ## Process
 
 ### 1. Read The Brief Closely
 
+All of these live under `brief.metadata` (not the brief's top level —
+see `idea-director.md`'s "A Note On The Brief's Shape" for why).
 Extract:
-- **`thematic_question`** — the single question this piece answers.
-- **`duration_seconds`** — your word budget (see timing table below).
-- **`tone`** — shapes pacing, sentence length, word choice.
-- **`shape`** — structural approach (list, before/after, three-act,
+- **`metadata.thematic_question`** — the single question this piece answers.
+- **`metadata.duration_seconds`** — your word budget (see timing table below).
+- **`metadata.tone`** — shapes pacing, sentence length, word choice.
+- **`metadata.shape`** — structural approach (list, before/after, three-act,
   single-image expansion). The narration should follow this shape,
   not fight it.
-- **`narration.language`** — write in this language. For "The Forgotten
+- **`metadata.narration.language`** — write in this language. For "The Forgotten
   Shadows" channel specifically, this is always English regardless of
   any other project convention.
 
 ### 2. Plan The Narrative Arc By Shape
 
-Map the brief's `shape` to a narration structure:
+Map the brief's `metadata.shape` to a narration structure:
 
 - **list/catalogue**: a short frame at the top, then N parallel beats
   of roughly equal weight, no forced turn.
@@ -134,7 +136,7 @@ retrieval queries.
 | **Coverage** | Does the narration actually answer the thematic question, not just gesture at it? |
 | **Word count accuracy** | Within ±10% of the word budget for the duration? |
 | **Concreteness** | Can you picture a specific shot for every beat, or are some beats pure abstraction? |
-| **Shape fidelity** | Does the beat sequence follow the brief's `shape` (list/before-after/three-act/single-image)? |
+| **Shape fidelity** | Does the beat sequence follow the brief's `metadata.shape` (list/before-after/three-act/single-image)? |
 | **No padding** | If duration is long-form, does every beat add new information, or are some beats restating earlier ones to fill time? |
 
 If any dimension is weak, revise before submitting — especially "no
@@ -161,18 +163,19 @@ the idea stage's Topic-Viability Check was meant to prevent.
 ```
 
 `total_duration_seconds` should land within 10% of
-`brief.duration_seconds`. If your beats run long or short, cut or
-extend beats — don't pad with filler words to hit the number.
+`brief.metadata.duration_seconds`. If your beats run long or short,
+cut or extend beats — don't pad with filler words to hit the number.
 
 ### 7. Quality Gate
 
 - Every section has non-empty `text`, `start_seconds`, `end_seconds`.
 - Sections are contiguous and in order (no gaps, no overlaps).
-- `total_duration_seconds` within ±10% of `brief.duration_seconds`.
+- `total_duration_seconds` within ±10% of `brief.metadata.duration_seconds`.
 - No section is pure abstraction with no concrete image/action to
   point a camera at.
-- `metadata.thematic_question` echoes the brief verbatim.
-- Narration language matches `brief.narration.language`.
+- This artifact's own `metadata.thematic_question` echoes
+  `brief.metadata.thematic_question` verbatim.
+- Narration language matches `brief.metadata.narration.language`.
 
 ## Common Pitfalls
 
@@ -191,6 +194,10 @@ extend beats — don't pad with filler words to hit the number.
   multiple sections — the scene director maps sections to visual
   scenes, and a single 90-second section gives it nothing to work
   with structurally.
+- **Reading brief fields from the top level instead of `metadata`.**
+  This pipeline's brief keeps `thematic_question`, `duration_seconds`,
+  `tone`, `shape`, `narration`, etc. under `brief.metadata` — see
+  `idea-director.md`'s "A Note On The Brief's Shape".
 
 ---
 
