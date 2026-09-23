@@ -7,6 +7,29 @@ downstream stage will read. For this pipeline, the brief is the
 thematic core: what the montage is ABOUT, what it should feel like,
 and how long it should run.
 
+## A Note On The Brief's Shape
+
+`brief.schema.json` is shared across every pipeline (explainer,
+talking-head, documentary-montage, etc.) and is locked down with
+`additionalProperties: false` at the top level — only `version`,
+`title`, `hook`, `key_points`, `tone`, `style`, `target_platform`, and
+`target_duration_seconds` are valid top-level fields.
+
+Everything specific to THIS pipeline — `thematic_question`,
+`duration_seconds`, `shape`, `narration`, `music_plan`, `end_tag_plan`,
+`era_mix`, `sources_allowed`, `topic`, `generated_clips_allowed` — goes
+inside `brief.metadata`, which is schema-open and exists exactly for
+this (the same pattern `scene_plan.schema.json` uses for its
+pipeline-specific `slots[]`). Do NOT put these fields at the top level
+of the brief — the artifact will fail schema validation.
+
+`target_duration_seconds` (top-level, shared schema) and
+`metadata.duration_seconds` (this pipeline's own field) are two
+different things — do not conflate or rename one into the other. If
+you want to also set the shared `target_duration_seconds` for
+cross-pipeline tooling that reads it, you may, but `metadata.duration_seconds`
+remains the field every stage in THIS pipeline actually reads.
+
 ## Runtime Selection (MANDATORY — present the constraint, don't silently pick)
 
 Lock `render_runtime = "remotion"`. **HyperFrames is NOT a valid runtime on this pipeline in Phase 1** — documentary-montage depends on the Remotion `CinematicRenderer` composition and its ProRes-4444 alpha end-tag overlay stack, neither of which has HyperFrames parity.
@@ -17,7 +40,7 @@ Per AGENT_GUIDE.md → "Present Both Composition Runtimes (HARD RULE)": do NOT s
 
 | Layer | Resource | Purpose |
 |-------|----------|---------|
-| Schema | `schemas/artifacts/brief.schema.json` | Artifact validation |
+| Schema | `schemas/artifacts/brief.schema.json` | Artifact validation (top-level fields only — see "A Note On The Brief's Shape" above) |
 | User input | Conversation history | The raw ask |
 | Meta | `skills/meta/reviewer.md` | Self-review pass |
 
@@ -41,10 +64,14 @@ Bad thematic questions (too abstract or too concrete):
 - "A montage with 8 specific shots of the moon" (too concrete — that's
   a shot list, not a theme)
 
+This becomes `metadata.thematic_question`.
+
 ### 2. Fix The Tone
 
 Choose ONE emotional register. Write it down. Everything downstream
-keys off this.
+keys off this. This becomes `metadata.tone` (you may also mirror it to
+the shared top-level `tone` field if useful for cross-pipeline tooling
+— they can hold the same value).
 
 Common registers for this pipeline:
 
@@ -58,7 +85,8 @@ Common registers for this pipeline:
 
 ### 3. Pick A Duration And A Shape
 
-Duration matters because it caps the number of beats.
+Duration matters because it caps the number of beats. This becomes
+`metadata.duration_seconds` and `metadata.shape`.
 
 | Duration | Beats | Use |
 |----------|-------|-----|
@@ -80,10 +108,10 @@ Shape options:
 
 #### Topic-Viability Check (MANDATORY for long-form targets)
 
-If `duration_seconds` targets a long-form runtime (roughly 7-8+
-minutes), do NOT assume the topic can naturally sustain it. A topic
-that only has 90 seconds of real story will not become an 8-minute
-video by padding — it becomes a repetitive, thin one.
+If `metadata.duration_seconds` targets a long-form runtime (roughly
+7-8+ minutes), do NOT assume the topic can naturally sustain it. A
+topic that only has 90 seconds of real story will not become an
+8-minute video by padding — it becomes a repetitive, thin one.
 
 Before locking the brief, check:
 
@@ -110,13 +138,13 @@ If the topic can't sustain the target length naturally:
 Documentary montage is inseparable from its music bed. **Music is MANDATORY
 for this pipeline.** The ONLY way out is an explicit user opt-out (e.g.
 "no music, I want it silent") — which MUST be recorded as
-`music_plan.source = "none"` with a `music_plan.opt_out_reason` field.
+`metadata.music_plan.source = "none"` with a `metadata.music_plan.opt_out_reason` field.
 
 Silent-by-design briefs that feel "pure" at the idea stage regularly look
 like abandoned footage at compose time. Do not assume silence will earn
 itself. If the user has not mentioned music, ASSUME THEY WANT IT and pick:
 
-- user-provided track (put path in `music_plan.source_path`),
+- user-provided track (put path in `metadata.music_plan.source_path`),
 - music library pick (query `registry.get_by_capability("music_library")` and list tracks),
 - royalty-free search (query `registry.get_by_capability("music_search")`, report provider and license),
 - generated (name the tool and prompt seed with register),
@@ -142,20 +170,22 @@ user explicitly asks for a separated title card, or when the final
 footage is too visually busy for legible text overlay.
 
 **End-tag is MANDATORY.** The ONLY way out is an explicit user opt-out
-recorded as `end_tag_plan: null` with an `end_tag_opt_out_reason` field.
+recorded as `metadata.end_tag_plan: null` with a `metadata.end_tag_opt_out_reason` field.
 
 Propose the end-tag at the brief stage. Write 3 options and recommend one.
-Expected shape:
+Expected shape (nested under `metadata`):
 
 ```json
 {
-  "end_tag_plan": {
-    "text": "WE BUILT BOTH WITH THE SAME HANDS.",
-    "palette": "warm_ivory_on_black",
-    "duration_seconds": 5.5,
-    "render_engine": "remotion",
-    "component": "EndTag",
-    "mode": "overlay"
+  "metadata": {
+    "end_tag_plan": {
+      "text": "WE BUILT BOTH WITH THE SAME HANDS.",
+      "palette": "warm_ivory_on_black",
+      "duration_seconds": 5.5,
+      "render_engine": "remotion",
+      "component": "EndTag",
+      "mode": "overlay"
+    }
   }
 }
 ```
@@ -190,71 +220,86 @@ or channel-level notes for the required language — do not assume).
 
 **The ONLY way out is an explicit user opt-out**, e.g. "no narration,
 I want it silent/tone-poem" — which MUST be recorded as
-`narration: "none"` with a `narration_opt_out_reason` field. Do not
+`metadata.narration: "none"` with a `metadata.narration_opt_out_reason` field. Do not
 leave the field missing, and do not default to no-narration just
 because the user didn't bring it up — ask.
 
 When narration is used (the default), a downstream `script` stage
 writes the full narration text before scene planning begins — you do
 not write narration text here, only the intent (provider, voice,
-language, opt-out or not).
+language, opt-out or not), recorded as
+`metadata.narration = {provider, voice, language}`.
 
 ### 7. Record The Brief
 
-Minimum fields the brief must carry:
+Top-level fields come from `brief.schema.json` directly. Every
+documentary-montage-specific field goes inside `metadata`:
 
 ```json
 {
-  "topic": "A minute in the rain",
-  "thematic_question": "What does rain show you about a city?",
+  "version": "1.0",
+  "title": "A minute in the rain",
   "tone": "elegiac",
-  "duration_seconds": 90,
-  "shape": "list",
-  "sources_allowed": ["pexels", "pixabay_video", "coverr", "mixkit", "archive_org", "nara", "nasa"],
-  "generated_clips_allowed": false,
-  "narration": {
-    "provider": "elevenlabs",
-    "voice": "warm_documentary_male",
-    "language": "en"
-  },
-  "music_plan": {
-    "source": "generated",
-    "provider": "elevenlabs",
-    "prompt_seed": "slow ambient drone in A minor, no percussion, 60s sustained swell, Max Richter register"
-  },
-  "end_tag_plan": {
-    "text": "THE CITY KEEPS ITS OWN VIGIL.",
-    "palette": "cool_offwhite_on_black",
-    "duration_seconds": 5.5,
-    "render_engine": "remotion",
-    "component": "EndTag"
-  },
-  "era_mix": "any",
-  "target_platform": "social_short"
+  "target_platform": "social_short",
+  "metadata": {
+    "topic": "A minute in the rain",
+    "thematic_question": "What does rain show you about a city?",
+    "tone": "elegiac",
+    "duration_seconds": 90,
+    "shape": "list",
+    "sources_allowed": ["pexels", "pixabay_video", "coverr", "mixkit", "archive_org", "nara", "nasa"],
+    "generated_clips_allowed": false,
+    "narration": {
+      "provider": "elevenlabs",
+      "voice": "warm_documentary_male",
+      "language": "en"
+    },
+    "music_plan": {
+      "source": "generated",
+      "provider": "elevenlabs",
+      "prompt_seed": "slow ambient drone in A minor, no percussion, 60s sustained swell, Max Richter register"
+    },
+    "end_tag_plan": {
+      "text": "THE CITY KEEPS ITS OWN VIGIL.",
+      "palette": "cool_offwhite_on_black",
+      "duration_seconds": 5.5,
+      "render_engine": "remotion",
+      "component": "EndTag"
+    },
+    "era_mix": "any"
+  }
 }
 ```
 
-`era_mix` is a documentary-specific field: "modern" biases toward
-Pexels, "vintage" biases toward Archive.org Prelinger, "any" leaves it
-open for the scene director to decide per slot.
+`metadata.era_mix` is a documentary-specific field: "modern" biases
+toward Pexels, "vintage" biases toward Archive.org Prelinger, "any"
+leaves it open for the scene director to decide per slot.
+
+Every downstream stage in this pipeline (`script-director.md`,
+`scene-director.md`, `asset-director.md`) reads these fields from
+`brief.metadata.*`, not from the brief's top level.
 
 ### 8. Quality Gate
 
-- Thematic question is ONE sentence.
-- Tone is ONE register from the fixed list.
-- Duration and shape are concrete numbers / enum values.
+- `metadata.thematic_question` is ONE sentence.
+- `metadata.tone` is ONE register from the fixed list.
+- `metadata.duration_seconds` and `metadata.shape` are concrete
+  numbers / enum values.
 - If duration targets long-form (~7-8+ minutes), the Topic-Viability
   Check has been performed and the topic has enough natural material,
   OR the duration/topic was adjusted after the check.
-- `music_plan` is present AND either names a real source OR has
+- `metadata.music_plan` is present AND either names a real source OR has
   `source: "none"` + `opt_out_reason` (explicit user decision).
-- `end_tag_plan` is present AND either has a non-empty `text` OR is
-  `null` with `end_tag_opt_out_reason` (explicit user decision).
-- `narration` is present AND either names provider/voice/language OR
-  is `"none"` with `narration_opt_out_reason` (explicit user decision).
-- Sources list is non-empty and at least one requested source is
-  `available` per `corpus_builder.source_provider_menu` surfaced in
-  preflight.
+- `metadata.end_tag_plan` is present AND either has a non-empty `text` OR is
+  `null` with `metadata.end_tag_opt_out_reason` (explicit user decision).
+- `metadata.narration` is present AND either names provider/voice/language OR
+  is `"none"` with `metadata.narration_opt_out_reason` (explicit user decision).
+- `metadata.sources_allowed` is non-empty and at least one requested
+  source is `available` per `corpus_builder.source_provider_menu`
+  surfaced in preflight.
+- No documentary-montage-specific field (see list in "A Note On The
+  Brief's Shape") was accidentally written at the brief's top level —
+  it will fail schema validation there.
 
 ## Common Pitfalls
 
@@ -274,6 +319,10 @@ open for the scene director to decide per slot.
   Narration is mandatory unless the user explicitly opts out.
 - Skipping the end-tag because "the images speak for themselves". They
   don't — the end-tag is the thesis. Propose one every time.
+- Writing `thematic_question`, `duration_seconds`, `narration`, etc.
+  at the top level of the brief instead of under `metadata` — this
+  will fail schema validation (`additionalProperties: false` at the
+  top level of `brief.schema.json`).
 
 ---
 
