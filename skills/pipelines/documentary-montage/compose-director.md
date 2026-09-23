@@ -22,10 +22,11 @@ This pipeline currently REQUIRES `render_runtime="remotion"`. The end-tag stack 
 | Layer | Resource | Purpose |
 |-------|----------|---------|
 | Schema | `schemas/artifacts/render_report.schema.json` | Artifact validation |
-| Prior artifact | `state.artifacts["edit"]["edit_decisions"]` | Cuts, transitions, music, metadata hints |
+| Prior artifact | `state.artifacts["edit"]["edit_decisions"]` | Cuts, transitions, music, narration, metadata hints |
 | Prior artifact | `state.artifacts["assets"]["asset_manifest"]` | File paths, durations, providers |
+| Prior artifact | `state.artifacts["idea"]["brief"]["metadata"]` | `music_plan`, `end_tag_plan`, `narration`, `duration_seconds` — documentary-montage-specific fields live under `brief.metadata`, not the brief's top level. Note `target_platform` is a shared top-level field, read from `brief.target_platform` directly. |
 | Tool | `video_compose` (Remotion-first + FFmpeg fallback) | Primary render engine |
-| Tool | `audio_mixer` | Music fade, silence window, L-cuts |
+| Tool | `audio_mixer` | Music fade, silence window, L-cuts, narration mix |
 | Tool (optional) | `color_grade` | Uniform LUT across mixed-era clips |
 | Tool (optional) | `video_trimmer`, `video_stitch` | Lower-level helpers if needed |
 
@@ -36,24 +37,31 @@ documentary montage it is a creative step: the last pass where grade
 and mix reconcile footage from radically different sources into one
 piece.
 
-Three things must happen here that cannot happen earlier:
+Four things must happen here that cannot happen earlier:
 
 1. **Uniform aspect and letterbox.** Pexels 1920x1080, Prelinger
    640x480 4:3, NASA 1280x720 all need to land on one canvas.
 2. **Uniform color grade.** A single LUT across the whole timeline
    is what makes the 1962 home movie sit next to the 2023 kitchen
    without jumping out.
-3. **Audio mix.** Music level, silence window, L-cut ambient
-   carries, final fade — done in one pass with the timeline in hand.
+3. **Audio mix.** Music level, narration level, silence window,
+   L-cut ambient carries, final fade — done in one pass with the
+   timeline in hand.
+4. **Narration mix.** Narration is mandatory by default on this
+   pipeline — music and ambient SFX duck under it, not the other way
+   around.
 
 ## Process
 
 ### 0. Hard Requirement Check
 
-Read `brief` and `edit_decisions.metadata` for any hard requirements.
-If the brief said "no narration" and a narration track somehow
-appeared in the edit, STOP and ask. Do not render over a contract
-violation.
+Read `brief.metadata` and `edit_decisions.metadata` for any hard
+requirements. **Narration is mandatory by default on this pipeline.**
+If `brief.metadata.narration` names a provider/voice (the default
+case) but no narration track appears in `edit_decisions.audio`, STOP
+and ask — the narration got silently dropped somewhere upstream. Only
+proceed without narration if `brief.metadata.narration == "none"` with
+an explicit `narration_opt_out_reason`.
 
 Also confirm that `edit_decisions.renderer_family` is locked to
 `documentary-montage` and that the chosen render engine preserves that
@@ -68,7 +76,8 @@ Remotion-first on `operation="render"`, even for footage-led pieces.
 
 ### 1. Resolve The Canvas
 
-Read `brief.target_platform`:
+Read `brief.target_platform` (this is a shared top-level brief field,
+not under `metadata`):
 
 | Target | Canvas | Letterbox |
 |--------|--------|-----------|
@@ -132,21 +141,36 @@ clip and a 2023 Pexels clip feel like the same film.
 The edit artifact already decided volumes, fades, silence windows,
 and L-cut sfx layers. Your job is to execute them faithfully:
 
-- Music bed at `edit_decisions.audio.music.volume` (default 0.7).
+- **Narration track at `edit_decisions.audio.narration.volume`**
+  (default 1.0, full presence — this is the primary audio channel on
+  this pipeline by default) unless `brief.metadata.narration == "none"`.
+- Music bed at `edit_decisions.audio.music.volume` (default ~0.5,
+  ducked under narration per `ducking: true`).
 - Fade in per `fade_in_seconds`, fade out per `fade_out_seconds`.
 - Silence window = ducked to 0.0 for the window's duration, ramp
-  back up with a 0.2s hold-off.
-- L-cut SFX layers = mix at 0.5-0.7 volume, under music.
-- No narration unless explicitly present in `edit_decisions.audio.narration`.
+  back up with a 0.2s hold-off. If narration is present, a silence
+  window should land between narration lines, not under one.
+- L-cut SFX layers = mix at 0.5-0.7 volume, under both music and
+  narration.
 
-**Music is MANDATORY.** If the edit has no music entry, check the brief:
+**Narration is MANDATORY by default.** If the edit has no narration
+entry, check the brief:
+
+- `brief.metadata.narration == "none"` with a `narration_opt_out_reason` →
+  the user explicitly opted out. Proceed without narration.
+- Anything else → STOP. Narration is missing from a pipeline where it
+  should be present by default. This likely means it was dropped
+  somewhere between script and edit stages — surface it before
+  rendering rather than silently shipping a silent-narration piece.
+
+**Music is also MANDATORY** by the same logic. If the edit has no
+music entry, check the brief:
 
 - `brief.metadata.music_plan.source == "none"` with an `opt_out_reason` →
-  the user explicitly opted out. Render silent and note it in
+  the user explicitly opted out. Render without music and note it in
   `render_report.warnings`.
 - Anything else → STOP. This is a contract violation. Surface it to
-  the user before rendering. A silent render on a music-mandatory brief
-  is the loudest failure mode in this pipeline.
+  the user before rendering.
 
 Do NOT add ambient noise "to fill the gap".
 
@@ -178,8 +202,9 @@ appears on top of live footage rather than cutting to a black card.
 
 **Execution:**
 
-1. Compose the body via FFmpeg (cuts + LUT + music + silence window).
-   Save as `projects/<name>/renders/body.mp4`. Note the body fps.
+1. Compose the body via FFmpeg (cuts + LUT + music + narration +
+   silence window). Save as `projects/<name>/renders/body.mp4`. Note
+   the body fps.
 2. Compute `durationInFrames = round(duration_seconds × body_fps)`.
 3. Render the end-tag with alpha via Remotion CLI:
    ```bash
@@ -240,9 +265,10 @@ this only when `end_tag_plan.mode == "concat"`.
 #### Common Rules (Both Modes)
 
 **End-tag is MANDATORY.** The ONLY way to skip it is an explicit user
-opt-out recorded as `end_tag_plan: null` with an `end_tag_opt_out_reason`.
-If the brief has an end-tag plan but you skipped rendering it, that is
-a contract violation. Stop and surface before finalizing.
+opt-out recorded as `brief.metadata.end_tag_plan: null` with a
+`brief.metadata.end_tag_opt_out_reason`. If the brief has an end-tag
+plan but you skipped rendering it, that is a contract violation. Stop
+and surface before finalizing.
 
 Record in `render_report`:
 - `end_tag_rendered: true | false`
@@ -253,7 +279,8 @@ Record in `render_report`:
 
 If the brief says "no music" and the edit correctly has no music
 entry AND `music_plan.source == "none"` with an opt-out reason, render
-silent. Do NOT add ambient noise "to fill the gap".
+without a music bed (narration, if present, still carries). Do NOT
+add ambient noise "to fill the gap".
 
 ### 5. Render At Documentary Spec
 
@@ -266,7 +293,7 @@ Recommended encoder settings for doc montage:
 | CRF | `18` | Visually lossless for final deliverables |
 | FPS | `24` | Cinematic. Do NOT upconvert 24->30. |
 | Audio codec | `aac` | Universal |
-| Audio bitrate | `192k` | Music-bed friendly |
+| Audio bitrate | `192k` | Music-bed and narration friendly |
 
 If the source clips are 30fps and the canvas is 24fps, let the render
 pipeline drop frames evenly — don't blend. Motion interpolation on
@@ -279,13 +306,19 @@ After the render succeeds, actually probe the output file and check:
 - **Duration.** Should match `sum(out - in for cut in cuts) + fade
   in/out` within ±0.5s.
 - **Resolution.** Should match the canvas.
-- **Audio presence.** If music was in the plan, the output must
-  have an audio stream. If silence was planned, confirm.
+- **Audio presence.** If narration and/or music was in the plan, the
+  output must have an audio stream with both channels audible. If
+  silence was planned (both opted out), confirm.
+- **Narration audible over music.** Spot-check a few timestamps
+  where narration and music overlap — narration should be clearly
+  intelligible, not buried under the music bed.
 - **First and last frame.** Open the file, seek to 0s and to
   duration-0.1s. The first frame should be a fade-in. The last
-  frame should be (or be fading to) black.
+  frame should be (or be fading to) black, or the end-tag card in
+  concat mode.
 - **Silence window.** Seek to the silence_window start. Audio level
-  should drop visibly in the waveform.
+  should drop visibly in the waveform (narration should also be
+  silent here, not just music).
 
 Record verifications in `render_report.verification_notes`.
 
@@ -312,7 +345,8 @@ Record verifications in `render_report.verification_notes`.
   "verification_notes": [
     "Duration within +0.2s of planned",
     "First frame is black fade-in as specified",
-    "Silence window 54-56s confirmed (music -60dB)",
+    "Narration audible and clear over music bed throughout",
+    "Silence window 54-56s confirmed (music and narration both -60dB)",
     "Last frame fades to black at 89.0s"
   ],
   "render_grammar": "documentary-montage",
@@ -321,7 +355,8 @@ Record verifications in `render_report.verification_notes`.
     "canvas": { "width": 1920, "height": 1080 },
     "letterbox": "2.35:1",
     "lut": "warm_film_100",
-    "music_present": true
+    "music_present": true,
+    "narration_present": true
   }
 }
 ```
@@ -329,16 +364,17 @@ Record verifications in `render_report.verification_notes`.
 ### 8. Quality Gate
 
 - Output file exists and plays.
-- Duration within ±1s of `brief.duration_seconds` (body + end-tag inclusive).
+- Duration within ±1s of `brief.metadata.duration_seconds` (body + end-tag inclusive).
 - Resolution matches `target_platform` canvas.
 - LUT was applied (or a warning logged).
+- **Narration is present** unless `brief.metadata.narration == "none"` with an explicit opt-out reason.
 - **Music is present** unless `brief.metadata.music_plan.source == "none"` with an explicit opt-out reason.
-- **End-tag MP4 was rendered and concatenated** unless `brief.metadata.end_tag_plan` is null with an explicit opt-out reason. Last frame of final MP4 must be the end-tag card in that case.
+- **End-tag MP4 was rendered and concatenated/overlaid** unless `brief.metadata.end_tag_plan` is null with an explicit opt-out reason. Last frame of final MP4 must be (or be fading into) the end-tag in that case.
 - First and last frames verified.
 - Silence window (if any) verified in the waveform.
-- No narration unless brief-approved.
+- Narration is intelligible over the music bed (not just present, but audible).
 - `render_report.warnings` lists every substitution.
-- `render_report.metadata.music_mixed = true` and `render_report.metadata.end_tag_rendered = true` (or explicit opt-out recorded).
+- `render_report.metadata.music_mixed = true`, `render_report.metadata.narration_present = true` (or explicit opt-outs recorded), and `render_report.metadata.end_tag_rendered = true` (or explicit opt-out recorded).
 
 ## Common Pitfalls
 
@@ -349,8 +385,13 @@ Record verifications in `render_report.verification_notes`.
   Prelinger 640x480 upscaled to 1920x1080 looks pixelated and wrong.
   Center it with letterbox bars, or embrace the squared crop as a
   design choice.
-- **Narration or ambient SFX added "to fill the gap".** Major
-  change, needs user approval.
+- **Silently dropping narration because it wasn't in the edit
+  artifact.** This pipeline defaults to narration — a missing
+  narration track at compose time is a signal something broke
+  upstream, not a cue to just render without it. Stop and ask, unless
+  the brief explicitly opted out.
+- **Ambient SFX added "to fill the gap".** Major change, needs user
+  approval.
 - **Per-clip color grading.** One LUT across the whole piece. Do
   not try to balance each clip individually — it takes 10x the time
   and makes the register LESS consistent, not more.
@@ -364,6 +405,14 @@ Record verifications in `render_report.verification_notes`.
 - **Skipping verification.** A render that "succeeded" but is
   actually silent, or fades wrong, or clips the last hero frame, is
   worse than a failure. Open the file.
+- **Music burying the narration.** If the mix sounds like a music
+  video instead of a narrated documentary, the ducking level is
+  wrong. Narration should be the clear foreground track.
+- **Reading brief fields from the top level instead of `metadata`.**
+  This pipeline's brief keeps `narration`, `music_plan`,
+  `end_tag_plan`, `duration_seconds`, etc. under `brief.metadata` —
+  `target_platform` is the one exception, staying at the brief's top
+  level. See `idea-director.md`'s "A Note On The Brief's Shape".
 
 ## When The Render Fails
 
