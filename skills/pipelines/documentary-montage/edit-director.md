@@ -16,8 +16,9 @@ its job, you have the raw material. The edit is the thinking.
 |-------|----------|---------|
 | Schema | `schemas/artifacts/edit_decisions.schema.json` | Artifact validation |
 | Prior artifact | `state.artifacts["assets"]["asset_manifest"]` | Picked clips + music bed |
-| Prior artifact | `state.artifacts["scene_plan"]["scene_plan"]` | Slot order, hero flags, target holds |
-| Prior artifact | `state.artifacts["idea"]["brief"]` | Tone register, duration, shape |
+| Prior artifact | `state.artifacts["scene_plan"]["scene_plan"]` | Slot order, hero flags, **target_hold_seconds per slot (the authority on hold duration — see Step 1)** |
+| Prior artifact | `state.artifacts["script"]["script"]` | Section timing, in case a hold needs to be re-checked against narration pace |
+| Prior artifact | `state.artifacts["idea"]["brief"]["metadata"]` | Tone register, duration, shape — documentary-montage-specific fields live under `brief.metadata`, not the brief's top level |
 | Tool (optional) | `video_analyzer` | Probe a clip's motion if you need to re-check |
 
 ## Mental Model
@@ -46,40 +47,54 @@ Before touching the timeline, re-read the brief. If any of these are
 true, STOP and surface to the user per the Decision Communication
 Contract:
 
-- The brief approved "no narration" but the edit feels like it needs
-  voice-over. Narration is a MAJOR change.
+- The brief opted out of narration (`brief.metadata.narration = "none"`)
+  but the edit feels like it needs voice-over. Adding narration this
+  late is a MAJOR change — it also means the whole `script` →
+  `scene_plan` timing chain was skipped, so this isn't a quick add.
 - The brief approved a music track that the edit director now wants
   to replace. Music swap is a MAJOR change.
-- The brief approved a 90s duration but the natural cut wants 2m30s.
-  Duration stretch is a MAJOR change.
+- The scene plan's slot holds (from `target_hold_seconds`, in turn
+  from narration timing) don't sum close to
+  `brief.metadata.duration_seconds`. A drift here usually means the
+  script or scene plan already drifted upstream — flag it rather than
+  quietly stretching/compressing everything to force-fit the number.
 
 Fix the edit, don't paper over it. If the edit genuinely needs
 one of these, ask.
 
-### 1. Set The Rhythm Grid
+### 1. Read The Hold Durations From The Scene Plan — Don't Recompute Them
 
-Read `brief.tone` and `brief.duration_seconds`. Compute the hold
-table from the scene director's tone chart:
+**Each slot's hold duration is already decided.** The scene director
+set `target_hold_seconds` per slot in `scene_plan.metadata.slots[]`,
+derived from that slot's script section's narration timing (see
+`scene-director.md` Step 1). This stage does NOT use a fixed tone-based
+hold table — there isn't one anymore. Your job here is to realize those
+already-decided holds as actual clip in/out points, not to decide hold
+length from scratch.
 
-| Tone | Base hold | Min hold | Max hold |
-|------|-----------|----------|----------|
-| elegiac | 4.0s | 2.5s | 7.0s |
-| reverent | 3.5s | 2.0s | 6.0s |
-| dreamlike | 3.0s | 1.5s | 5.5s |
-| wry | 2.0s | 1.0s | 4.0s |
-| urgent | 1.2s | 0.5s | 2.5s |
+For each cut:
 
-**Hero slots get max hold.** Mid-sequence cutaways get base. Quick
-transitions get min.
+- Start from the slot's `target_hold_seconds`.
+- If the picked clip's usable window (see Step 3) genuinely can't
+  sustain that hold without looking static or repeating motion, you
+  may adjust — but log why in `metadata.reorder_notes` or a per-cut
+  `reason`, and keep the total close to the section's original
+  narration-derived span.
+- **Hero slots** get first claim on any flex — if you need to borrow
+  or lend a fraction of a second between adjacent cuts to make a
+  transition or L-cut work cleanly, take it from a non-hero neighbor.
 
-Total hold time must sum to within ±10% of `brief.duration_seconds`.
-If you overshoot, compress non-hero holds first — never cut heroes
-short to fit duration.
+Total hold time must sum to within ±10% of
+`brief.metadata.duration_seconds`. If you're overshooting or
+undershooting by more than that, the drift most likely originated
+upstream (script pacing or scene decomposition) — flag it rather than
+force-fitting the timeline here.
 
 ### 2. Arrange By Narrative Beat, Not By Score
 
-The scene director gave you a slot order. That order is the intent.
-Don't rearrange it by CLIP score, motion score, or resolution.
+The scene director gave you a slot order, itself following the
+script's beat order. That order is the intent. Don't rearrange it by
+CLIP score, motion score, or resolution.
 
 You MAY reorder slots when:
 
@@ -91,6 +106,12 @@ You MAY reorder slots when:
 - The final image isn't landing. The last 5-10s carries
   disproportionate weight; if the scene director's choice dies, move
   a stronger candidate to the tail.
+
+Reordering slots that came from different script sections risks
+breaking the narration's sense — a scene can only move within or
+adjacent to its own section's timing without also moving the narration
+audio, so treat cross-section reorders as a bigger flag than
+within-section ones.
 
 Always log the reorder in `edit_decisions.metadata.reorder_notes`
 with the reason.
@@ -112,6 +133,9 @@ If a clip is too short to fill its target hold, either:
 
 - slow it down (speed 0.5-0.75, fine on static-ish footage, bad on
   anything with sync motion or faces talking),
+- apply a Ken Burns pan/zoom to stretch a still or near-still frame to
+  the full hold (the scene director may have already flagged a slot
+  for this — see `scene-director.md` Step 1),
 - let it cut early and borrow the remaining duration from the next
   slot's hold,
 - or swap to the #2 candidate from the rejected-picks log.
@@ -139,16 +163,20 @@ Record the music config in `edit_decisions.audio.music` with:
 ```json
 {
   "asset_id": "asset_music_bed",
-  "volume": 0.7,
+  "volume": 0.5,
   "fade_in_seconds": 1.0,
   "fade_out_seconds": 4.0,
-  "ducking": false
+  "ducking": true
 }
 ```
 
-`ducking: false` is the default for this pipeline — there's no
-narration to duck under. If the user approved a narration track, set
-ducking to true and let it dip during segments.
+**`ducking: true` is the default for this pipeline now** — narration
+is mandatory by default (see `executive-producer.md`), so the music
+bed should duck under the narration track. Only set `ducking: false`
+if `brief.metadata.narration = "none"` (explicit opt-out, no
+narration track to duck under). Music `volume` should also generally
+sit lower (~0.4-0.6) than a music-only piece, since it's sharing space
+with a voice.
 
 ### 5. Choose Transitions From A Small Vocabulary
 
@@ -223,7 +251,9 @@ by layering the outgoing clip's audio as an SFX entry in
 `edit_decisions.audio.sfx` with a delayed end.
 
 Documentary montages with L-cuts feel 50% more coherent than ones
-without. Use them on the 3-4 hardest transitions in the piece.
+without. Use them on the 3-4 hardest transitions in the piece — but
+keep ambient SFX low enough that it never competes with the narration
+track sitting on top.
 
 ### 8b. Place The End-Tag Overlay
 
@@ -263,6 +293,7 @@ Canonical shape for this pipeline:
     {
       "id": "cut_01",
       "source": "asset_slot_01",
+      "script_section_id": "s1",
       "in_seconds": 1.2,
       "out_seconds": 5.2,
       "layer": "primary",
@@ -270,11 +301,12 @@ Canonical shape for this pipeline:
       "transition_in": "fade_in",
       "transition_out": "cut",
       "transition_duration": 0.8,
-      "reason": "opening hero — raindrop on asphalt, 4s hold, slow-motion streetlamp glow"
+      "reason": "opening hero — raindrop on asphalt, hold matches section s1's narration span"
     },
     {
       "id": "cut_02",
       "source": "asset_slot_02",
+      "script_section_id": "s2",
       "in_seconds": 2.0,
       "out_seconds": 5.5,
       "layer": "primary",
@@ -286,10 +318,14 @@ Canonical shape for this pipeline:
   "audio": {
     "music": {
       "asset_id": "asset_music_bed",
-      "volume": 0.7,
+      "volume": 0.5,
       "fade_in_seconds": 1.0,
       "fade_out_seconds": 4.0,
-      "ducking": false
+      "ducking": true
+    },
+    "narration": {
+      "asset_id": "asset_narration_track",
+      "volume": 1.0
     }
   },
   "end_tag": {
@@ -301,7 +337,6 @@ Canonical shape for this pipeline:
     "tone": "elegiac",
     "shape": "list",
     "total_duration_seconds": 90.0,
-    "hold_table_used": { "base": 4.0, "min": 2.5, "max": 7.0 },
     "grade_profile": "warm_film_100",
     "reorder_notes": [],
     "diversity_swaps": [
@@ -315,22 +350,40 @@ Canonical shape for this pipeline:
 }
 ```
 
+Note `cuts[].script_section_id` — carry this through from the scene
+plan's `scenes[].script_section_id` so provenance from narration →
+scene → cut survives all the way to the edit.
+
 ### 10. Quality Gate
 
 - `sum(out - in for cut in cuts)` is within ±10% of
-  `brief.duration_seconds`.
+  `brief.metadata.duration_seconds`.
+- Each cut's hold is close to its slot's `target_hold_seconds` from
+  the scene plan (not recomputed from a fixed tone table — there
+  isn't one on this pipeline).
 - `renderer_family = "documentary-montage"` is present and unchanged.
 - Hero slots have the longest holds.
 - No two adjacent cuts share subject AND scale.
 - The transition vocabulary is at most 4 distinct values.
-- Music config exists (or brief explicitly says no music).
+- Music config exists (or `brief.metadata.music_plan.source = "none"`
+  with explicit acknowledgement), with `ducking: true` unless
+  narration was explicitly opted out.
+- Narration track exists in `audio.narration` unless
+  `brief.metadata.narration = "none"` (explicit opt-out).
 - At least one `silence_window` entry for pieces >= 60s.
 - Every cut has a one-line `reason` — if you can't write one, the
   cut is arbitrary and should be reconsidered.
+- Every cut carries a `script_section_id` tracing it back to its
+  narration beat.
 - `metadata.total_duration_seconds` matches the sum of cut durations.
 
 ## Common Pitfalls
 
+- **Recomputing hold durations from a fixed tone table.** That table
+  doesn't exist anymore on this pipeline. Holds come from the scene
+  plan's `target_hold_seconds`, which itself comes from narration
+  timing. Overriding it with a generic tone-based number breaks
+  audio/visual sync.
 - **Cutting by information density instead of rhythm.** A doc
   montage is not a Wikipedia article. "But I need to show this" is
   not a reason — if the image doesn't sustain a hold, it doesn't
@@ -344,31 +397,51 @@ Canonical shape for this pipeline:
   director's slot ordering is a strong suggestion, not a contract.
 - **Freeze-frame endings.** Reads as technical error. End on a
   fade-to-black instead.
-- **Silently adding a narration because the edit feels thin.** Major
-  change. Ask.
+- **Silently adding narration because the edit feels thin.** This
+  pipeline defaults to narration already — if it's genuinely missing
+  at this stage, that means the brief opted out, and reversing that
+  now is a major change requiring approval, not something to patch
+  in quietly here.
 - **Hiding clip provider in the cuts.** Every `cut.source` must be
   an `asset_manifest` asset_id so provenance survives.
 - **Three different transition types in the first 15 seconds.**
   Readers will feel the edit working. Restraint is the brand.
+- **Reading brief fields from the top level instead of `metadata`.**
+  This pipeline's brief keeps `tone`, `duration_seconds`, `narration`,
+  `music_plan`, etc. under `brief.metadata` — see `idea-director.md`'s
+  "A Note On The Brief's Shape".
 
 ## Worked Pacing Example — "A Minute in the Rain"
 
-90 seconds, elegiac, list shape, 15 hero-flagged slots.
+90 seconds, elegiac, list shape, 15 script-derived slots (3 hero
+slots: 1, 11, 15).
 
-- Base hold 4.0s × 15 = 60s. Short by 30s.
-- Add 30s across 3 hero slots (1, 11, 15) at +10s each:
-  hero_1 = 5.5s, hero_11 = 6.0s, hero_15 = 7.0s.
-- Tighten slots 4, 7, 13 to 3.0s each (small cutaways).
-- Insert silence_window 54.0-56.0s (right before hero_11).
+- Slot holds already come from the scene plan's `target_hold_seconds`,
+  which trace back to each script section's narration span (e.g. a
+  6.5s script section maps to a 6.5s hero hold, an 8s section split
+  into 2 scenes might be 5s/3s). The edit director isn't computing a
+  base hold from a tone table — it's realizing these numbers as cut
+  in/out points.
+- Sum of all 15 target holds should already land close to 90s (that
+  was the scene director's quality gate). If it's off by more than
+  10%, that's a flag to raise, not something to silently rebalance
+  here.
+- Tighten slots 4, 7, 13 slightly if their clips can't sustain the
+  full target hold without visible repetition (small cutaways are the
+  easiest to trim without hurting the piece).
+- Insert silence_window 54.0-56.0s (right before hero_11) — this is
+  an edit-level music decision independent of hold length.
 - L-cut slot_10 (boot in puddle) → slot_11 (lit window across
-  street), carry rain-on-glass ambient 1.2s.
+  street), carry rain-on-glass ambient 1.2s, kept low under the
+  narration.
 - First cut `fade_in` 1.0s, last cut `fade_out` 1.5s.
 - All other cuts hard.
-- Music fades in 1.0s, fades out 4.0s under hero_15 + black.
+- Music ducks under narration throughout, fades in 1.0s, fades out
+  4.0s under hero_15 + black.
 
 This gives a 90s piece with 3 breathing points (fade_in, silence,
-fade_out), a clear hero arc (slots 1 → 11 → 15), and no adjacent
-scale collisions.
+fade_out), a clear hero arc (slots 1 → 11 → 15) that matches the
+script's own emphasis, and no adjacent scale collisions.
 
 ---
 
