@@ -82,7 +82,7 @@ call adapter classes directly from a skill or director.
 - **Narration is MANDATORY by default.** The brief should default to
   narration + music + real footage. A silent, image-only cut is now
   the exception and requires an explicit user opt-out recorded at the
-  idea stage (`brief.narration = "none"` with a
+  idea stage (`brief.metadata.narration = "none"` with a
   `narration_opt_out_reason`). Removing narration after the idea stage
   has locked it in is a MAJOR change and requires user approval per
   the Decision Communication Contract, same as adding it used to be.
