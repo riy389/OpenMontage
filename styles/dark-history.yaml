@@ -1,0 +1,119 @@
+identity:
+  name: "Dark History"
+  category: custom
+  mood: somber, ominous, atmospheric, restrained
+  pace: slow
+  best_for: "Faceless dark-history storytelling: medieval and ancient atrocities, plagues, secret societies, fallen empires. Narrated, mostly single painterly stills with slow camera motion."
+
+visual_language:
+  color_palette:
+    primary: ["#1A1A24", "#2B2430"]       # Near-black indigo, bruised plum shadows
+    # Dried-blood red, aged gold (candlelight), cold steel blue (moonlight, fog)
+    accent: ["#B3261E", "#C9A24B", "#6B7A8F"]
+    background: "#0B0A0F"                  # Near black
+    text: "#E8E0D0"                        # Aged parchment
+    muted: "#8A8478"                       # Ash grey
+  composition: wide 16:9 frames, strong chiaroscuro, single light source (candle, torch, moon), figures small against vast architecture or landscape, generous dark negative space for captions
+  texture: oil-painting and old woodcut grain, visible craquelure, soft film grain, fog and smoke, no clean digital gloss
+
+typography:
+  headings:
+    font: "Playfair Display"
+    weight: 700
+    tracking: "0.03em"
+  body:
+    font: "Inter"
+    weight: 400
+    line_height: 1.6
+  stat_card:
+    font: "Playfair Display"
+    weight: 700
+    size_multiplier: 3.0
+  scale_system: "major_third"
+  weight_matrix:
+    title: 700
+    heading: 700
+    body: 400
+    caption: 400
+
+motion:
+  transitions: [crossfade, dissolve, fade-to-black]
+  animation_style: "slow, heavy, no bounce; long ease-in-out camera drifts, gentle push-ins on reveals"
+  pacing_rules:
+    min_scene_hold_seconds: 5
+    max_scene_hold_seconds: 10
+    text_card_hold_seconds: 4
+    stat_card_hold_seconds: 4
+    transition_duration_seconds: 1.0
+  entrance: "slow fade-in from black (opacity 0->1 over 1s)"
+  exit: "fade to black (opacity 1->0 over 0.8s)"
+
+audio:
+  voice_style: "deep, calm, measured storyteller; quietly ominous, never theatrical; deliberate pauses before reveals"
+  music_mood: "dark ambient drones, low strings, sparse piano, distant choir; no melody that competes with the narration"
+  music_volume: 0.12
+  sfx_style: "subtle low rumbles, wind, distant bells, creaking wood; no jump-scare hits"
+  ducking_threshold_db: -3
+
+asset_generation:
+  image_prompt_prefix: >
+    Dark history illustration, painterly oil painting with old woodcut grain,
+    dramatic chiaroscuro lighting from a single candle, torch or moonlight,
+    desaturated palette with deep shadows, fog and smoke, wide cinematic 16:9 composition,
+    historically grounded period details,
+  image_negative_prompt: "text, letters, watermark, caption, logo, modern objects, photorealistic faces, close-up gore, graphic violence, cartoon, anime, bright cheerful colors, oversaturated, 3D render"
+  scene_type: "anime_scene"
+  default_particles: "mist"
+  default_vignette: true
+  consistency_anchors:
+    - "Narrator character block, copy verbatim into every prompt featuring the narrator: a lone figure in a long charcoal-black hooded cloak with a deep cowl, face completely hidden in shadow, seen from behind or three-quarter back view, plain cloth, no insignia or emblems"
+    - "Narrator appears only in selected scenes (hook, transitions, closing); when present, pass the narrator reference image as input_image_0 and refer to it as 'the hooded figure from image 0'"
+    - "Palette in every scene: near-black shadows (#0B0A0F), aged gold candlelight (#C9A24B), cold steel moonlight (#6B7A8F), dried-blood red (#B3261E) used sparingly"
+    - "Single dominant light source per frame; no flat or evenly lit scenes"
+    - "Period-accurate architecture, clothing and tools for the era being told"
+    - "Violence is implied, never shown: silhouettes, aftermath, shadows; no gore, no visible wounds"
+    - "No text burned into generated images; titles and captions are Remotion overlays"
+  multi_image_per_scene: false
+  images_per_scene: 1
+  image_variation_guidance: >
+    Default is one still per scene; the motion comes from Remotion camera moves, mist and vignette.
+    Hero beats only (at most 15% of scenes, reveals and climaxes) may use 3 images of the same
+    composition with subtle changes: shifted candle light, figure slightly turned, smoke in a different
+    position. Keep composition and palette identical so the crossfade reads as motion.
+
+overlays:
+  stat_card:
+    bg: "#14121CCC"
+    border: "#C9A24B"
+    radius: 8
+    shadow: "0 4px 30px rgba(0, 0, 0, 0.6)"
+  key_term:
+    bg: "#14121CCC"
+    text: "#E8E0D0"
+    radius: 6
+  section_title:
+    bg: "#0B0A0F99"
+    text: "#E8E0D0"
+    accent: "#C9A24B"
+
+quality_rules:
+  - "Minimum contrast ratio 4.5:1 for all text against backgrounds"
+  - "Every scene must have camera motion (Ken Burns push-in, pull-out or drift) plus mist or vignette"
+  - "Scene pacing: hold each scene 5-10 seconds; never cut faster than the narration allows"
+  - "Hooded narrator in at most about 40% of scenes; never as the only visual for more than two scenes in a row"
+  - "Same style prefix and same narrator character block in every prompt (verbatim), so the channel looks like one world"
+  - "Max 3 images per scene for crossfade, and only on hero beats"
+  - "No text burned into generated images - use Remotion overlays instead"
+  - "Advertiser-friendly: no graphic gore or real-person likenesses; depict atrocity through aftermath, shadow and implication"
+
+chart_palette:
+  - "#C9A24B"
+  - "#6B7A8F"
+  - "#B3261E"
+  - "#E8E0D0"
+  - "#8A8478"
+
+color_rules:
+  harmony_type: "analogous"
+  contrast_validation: true
+  colorblind_safe: true
