@@ -25,7 +25,7 @@ from tools.base_tool import (
 
 class CloudflareImage(BaseTool):
     name = "cloudflare_image"
-    version = "0.2.0"
+    version = "0.2.1"
     tier = ToolTier.GENERATE
     capability = "image_generation"
     provider = "cloudflare"
@@ -51,7 +51,7 @@ class CloudflareImage(BaseTool):
     }
     best_for = [
         "free-tier image generation (Cloudflare Workers AI neuron budget)",
-        "9:16 vertical beat/B-roll images for video pipelines",
+        "16:9 landscape scene images for video pipelines (default 1024x576; pass width/height for other ratios)",
         "character-consistent scenes via up to 4 reference images (image_paths)",
     ]
     not_good_for = ["text rendering in images", "seeded/reproducible generation"]
@@ -61,8 +61,8 @@ class CloudflareImage(BaseTool):
         "required": ["prompt"],
         "properties": {
             "prompt": {"type": "string"},
-            "width": {"type": "integer", "default": 768},
-            "height": {"type": "integer", "default": 1344},
+            "width": {"type": "integer", "default": 1024},
+            "height": {"type": "integer", "default": 576},
             "image_paths": {
                 "type": "array",
                 "items": {"type": "string"},
@@ -126,8 +126,8 @@ class CloudflareImage(BaseTool):
 
         start = time.time()
         prompt = inputs["prompt"]
-        width = inputs.get("width", 768)
-        height = inputs.get("height", 1344)
+        width = inputs.get("width", 1024)
+        height = inputs.get("height", 576)
         image_paths = inputs.get("image_paths") or []
 
         if len(image_paths) > self.MAX_REFERENCE_IMAGES:
