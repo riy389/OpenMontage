@@ -25,7 +25,7 @@ from tools.base_tool import (
 
 class CloudflareImage(BaseTool):
     name = "cloudflare_image"
-    version = "0.1.0"
+    version = "0.2.0"
     tier = ToolTier.GENERATE
     capability = "image_generation"
     provider = "cloudflare"
@@ -52,6 +52,7 @@ class CloudflareImage(BaseTool):
     best_for = [
         "free-tier image generation (Cloudflare Workers AI neuron budget)",
         "9:16 vertical beat/B-roll images for video pipelines",
+        "character-consistent scenes via up to 4 reference images (image_paths)",
     ]
     not_good_for = ["text rendering in images", "seeded/reproducible generation"]
 
@@ -62,6 +63,15 @@ class CloudflareImage(BaseTool):
             "prompt": {"type": "string"},
             "width": {"type": "integer", "default": 768},
             "height": {"type": "integer", "default": 1344},
+            "image_paths": {
+                "type": "array",
+                "items": {"type": "string"},
+                "maxItems": 4,
+                "description": (
+                    "Optional reference images (max 4) sent as input_image_0..3. "
+                    "Refer to them in the prompt by index, e.g. 'the figure from image 0'."
+                ),
+            },
             "output_path": {"type": "string"},
         },
     }
@@ -70,11 +80,14 @@ class CloudflareImage(BaseTool):
         cpu_cores=1, ram_mb=512, vram_mb=0, disk_mb=100, network_required=True
     )
     retry_policy = RetryPolicy(max_retries=2, retryable_errors=["rate_limit", "timeout"])
-    idempotency_key_fields = ["prompt", "width", "height"]
+    idempotency_key_fields = ["prompt", "width", "height", "image_paths"]
     side_effects = ["writes image file to output_path", "calls Cloudflare Workers AI API"]
     user_visible_verification = ["Inspect generated image for relevance and quality"]
 
     CF_MODEL = "@cf/black-forest-labs/flux-2-klein-4b"
+    MAX_REFERENCE_IMAGES = 4
+    # Cloudflare docs: each reference image must be smaller than 512x512.
+    REFERENCE_MAX_SIDE = 480
 
     def _get_credentials(self) -> tuple[str | None, str | None]:
         return (
@@ -91,6 +104,16 @@ class CloudflareImage(BaseTool):
     def estimate_cost(self, inputs: dict[str, Any]) -> float:
         return 0.0  # billed in neurons against the account's daily budget, not USD
 
+    def _prepare_reference(self, path: str) -> bytes:
+        """Load a reference image and downscale it to fit the API's size limit."""
+        from PIL import Image
+
+        img = Image.open(path).convert("RGB")
+        img.thumbnail((self.REFERENCE_MAX_SIDE, self.REFERENCE_MAX_SIDE))
+        buf = io.BytesIO()
+        img.save(buf, "PNG")
+        return buf.getvalue()
+
     def execute(self, inputs: dict[str, Any]) -> ToolResult:
         account_id, api_token = self._get_credentials()
         if not account_id or not api_token:
@@ -105,6 +128,14 @@ class CloudflareImage(BaseTool):
         prompt = inputs["prompt"]
         width = inputs.get("width", 768)
         height = inputs.get("height", 1344)
+        image_paths = inputs.get("image_paths") or []
+
+        if len(image_paths) > self.MAX_REFERENCE_IMAGES:
+            return ToolResult(
+                success=False,
+                error=f"Too many reference images: {len(image_paths)} "
+                f"(max {self.MAX_REFERENCE_IMAGES}).",
+            )
 
         url = (
             f"https://api.cloudflare.com/client/v4/accounts/{account_id}"
@@ -116,6 +147,23 @@ class CloudflareImage(BaseTool):
             "width": (None, str(width)),
             "height": (None, str(height)),
         }
+
+        for i, ref_path in enumerate(image_paths):
+            if not Path(ref_path).exists():
+                return ToolResult(
+                    success=False, error=f"Reference image not found: {ref_path}"
+                )
+            try:
+                form_data[f"input_image_{i}"] = (
+                    f"ref{i}.png",
+                    self._prepare_reference(ref_path),
+                    "image/png",
+                )
+            except Exception as e:
+                return ToolResult(
+                    success=False,
+                    error=f"Could not read reference image {ref_path}: {e}",
+                )
 
         try:
             response = requests.post(url, headers=headers, files=form_data, timeout=90)
@@ -163,6 +211,7 @@ class CloudflareImage(BaseTool):
                 "provider": "cloudflare",
                 "model": self.CF_MODEL,
                 "prompt": prompt,
+                "reference_images": len(image_paths),
                 "output": str(output_path),
             },
             artifacts=[str(output_path)],
