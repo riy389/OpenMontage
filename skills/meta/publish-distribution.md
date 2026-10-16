@@ -91,6 +91,12 @@ Telegram review for this project at Step 2). Treat a successful
 `youtube_upload` call as `status: "published"`, and capture `video_id`,
 `url`, and `visibility` from the result.
 
+**Default visibility is private.** YouTube uploads default to `private`
+(Review Gate Pattern). The reviewer (Riyanto) checks the video at
+https://youtu.be/<video_id>, then manually publishes via YouTube Studio
+if satisfied. The tool's OAuth scope is limited to `youtube.upload`;
+it cannot modify or delete the video after upload.
+
 If the user asked for Telegram review before YouTube upload, treat the
 Telegram send as a hard gate: wait for the user's explicit go-ahead (their
 reply, in chat or reported back from Telegram) before calling
@@ -115,7 +121,7 @@ tool:
   went live, not just that the gate was cleared.
 
 Do this by calling `telegram_notify` again with the result of
-`youtube_upload`:
+`youtube_upload`, passing the URL (no file upload needed):
 
 ```python
 youtube = registry.get("youtube_upload")
@@ -124,9 +130,7 @@ yt_result = youtube.execute({...})
 if yt_result.success:
     telegram = registry.get("telegram_notify")
     telegram.execute({
-        "video_path": ...,  # reuse the same local video; sendVideo will
-                             # attach it again, or pass a text-only path if
-                             # you'd rather not resend the file
+        "video_url": yt_result.data["url"],
         "caption": f"✅ Published: {yt_result.data['url']}",
         "project_id": project_id,
     })
