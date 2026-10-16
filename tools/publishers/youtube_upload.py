@@ -104,7 +104,7 @@ class YouTubeUpload(BaseTool):
             "visibility": {
                 "type": "string",
                 "enum": ["public", "private", "unlisted"],
-                "description": "Defaults to 'public' if not given.",
+                "description": "Defaults to 'private' if not given.",
             },
             "thumbnail_path": {
                 "type": "string",
@@ -163,7 +163,7 @@ class YouTubeUpload(BaseTool):
         description = inputs.get("description", "")
         tags = inputs.get("tags") or []
         category_id = inputs.get("category_id", "22")  # People & Blogs
-        visibility = inputs.get("visibility", "public")
+        visibility = inputs.get("visibility", "private")
 
         try:
             creds = Credentials(
@@ -183,7 +183,10 @@ class YouTubeUpload(BaseTool):
                     "tags": tags,
                     "categoryId": category_id,
                 },
-                "status": {"privacyStatus": visibility},
+                "status": {
+                    "privacyStatus": visibility,
+                    "containsSyntheticMedia": True,
+                },
             }
 
             media = MediaFileUpload(str(video_path), chunksize=4 * 1024 * 1024, resumable=True)

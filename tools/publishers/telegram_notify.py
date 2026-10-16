@@ -80,11 +80,15 @@ class TelegramNotify(BaseTool):
 
     input_schema = {
         "type": "object",
-        "required": ["video_path"],
+        "required": [],
         "properties": {
             "video_path": {
                 "type": "string",
-                "description": "Path to the video to send for review (e.g. renders/final.mp4 or the exported copy).",
+                "description": "Path to the video to send for review (e.g. renders/final.mp4 or the exported copy). Optional if video_url is provided.",
+            },
+            "video_url": {
+                "type": "string",
+                "description": "Optional YouTube or external video URL to send in the notification instead of uploading a file.",
             },
             "caption": {
                 "type": "string",
@@ -121,9 +125,15 @@ class TelegramNotify(BaseTool):
     # ---- Execution ----
 
     def execute(self, inputs: dict[str, Any]) -> ToolResult:
-        video_path = Path(inputs["video_path"]).expanduser()
-        if not video_path.is_file():
-            return ToolResult(success=False, error=f"video_path not found: {video_path}")
+        video_path = inputs.get("video_path")
+        video_url = inputs.get("video_url")
+        if not video_path and not video_url:
+            return ToolResult(success=False, error="Either video_path or video_url must be provided.")
+
+        if video_path:
+            video_path = Path(video_path).expanduser()
+            if not video_path.is_file():
+                return ToolResult(success=False, error=f"video_path not found: {video_path}")
 
         token = os.environ.get("TELEGRAM_BOT_TOKEN")
         chat_id = inputs.get("chat_id") or os.environ.get("TELEGRAM_CHAT_ID")
@@ -135,36 +145,46 @@ class TelegramNotify(BaseTool):
             )
 
         caption = inputs.get("caption", "")
-        size = video_path.stat().st_size
-        oversized = size > MAX_VIDEO_BYTES
-
-        try:
-            if oversized:
-                # Over the Bot API sendVideo limit: fall back to a text
-                # notification with the local path instead of failing the
-                # whole tool. The reviewer still gets pinged; they just have
-                # to open the file from the Codespace/VPS themselves.
-                note = (
-                    f"{caption}\n\n"
-                    f"[Video too large for Telegram: {size / (1024 * 1024):.1f} MB, "
-                    f"limit is {MAX_VIDEO_BYTES / (1024 * 1024):.0f} MB]\n"
-                    f"Local path: {video_path}"
-                ).strip()
+        
+        # If URL provided, just send text notification
+        if video_url:
+            note = f"{caption}\n\nVideo URL: {video_url}"
+            try:
                 response = requests.post(
                     f"{TELEGRAM_API_BASE}/bot{token}/sendMessage",
                     data={"chat_id": chat_id, "text": note},
                     timeout=30,
                 )
-            else:
-                with open(video_path, "rb") as f:
+            except requests.RequestException as exc:
+                return ToolResult(success=False, error=f"Telegram request failed: {exc}")
+        else:
+            # Fallback logic for local file
+            size = video_path.stat().st_size
+            oversized = size > MAX_VIDEO_BYTES
+
+            try:
+                if oversized:
+                    note = (
+                        f"{caption}\n\n"
+                        f"[Video too large for Telegram: {size / (1024 * 1024):.1f} MB, "
+                        f"limit is {MAX_VIDEO_BYTES / (1024 * 1024):.0f} MB]\n"
+                        f"Local path: {video_path}"
+                    ).strip()
                     response = requests.post(
-                        f"{TELEGRAM_API_BASE}/bot{token}/sendVideo",
-                        data={"chat_id": chat_id, "caption": caption},
-                        files={"video": (video_path.name, f, "video/mp4")},
-                        timeout=120,
+                        f"{TELEGRAM_API_BASE}/bot{token}/sendMessage",
+                        data={"chat_id": chat_id, "text": note},
+                        timeout=30,
                     )
-        except requests.RequestException as exc:
-            return ToolResult(success=False, error=f"Telegram request failed: {exc}")
+                else:
+                    with open(video_path, "rb") as f:
+                        response = requests.post(
+                            f"{TELEGRAM_API_BASE}/bot{token}/sendVideo",
+                            data={"chat_id": chat_id, "caption": caption},
+                            files={"video": (video_path.name, f, "video/mp4")},
+                            timeout=120,
+                        )
+            except requests.RequestException as exc:
+                return ToolResult(success=False, error=f"Telegram request failed: {exc}")
 
         if response.status_code != 200:
             return ToolResult(
