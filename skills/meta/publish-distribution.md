@@ -85,17 +85,7 @@ Telegram — record it as `status: "pending_review"` in the `publish_log`
 entry, never `"published"`. Nothing downstream (especially `youtube_upload`)
 may run until that approval comes back.
 
-**YouTube upload is a real publish action**, and it only happens *after*
-the Telegram approval is received (or immediately, if the user opted out of
-Telegram review for this project at Step 2). Treat a successful
-`youtube_upload` call as `status: "published"`, and capture `video_id`,
-`url`, and `visibility` from the result.
-
-**Default visibility is private.** YouTube uploads default to `private`
-(Review Gate Pattern). The reviewer (Riyanto) checks the video at
-https://youtu.be/<video_id>, then manually publishes via YouTube Studio
-if satisfied. The tool's OAuth scope is limited to `youtube.upload`;
-it cannot modify or delete the video after upload.
+**YouTube upload is a real publish action**, and it happens as a **Review Gate Pattern**: upload the video as `private`, then send the YouTube URL via `telegram_notify` for the reviewer (Riyanto) to check. The agent never uploads with `public` visibility. Once satisfied, the reviewer manually publishes via YouTube Studio. The tool's OAuth scope is limited to `youtube.upload`; it cannot modify or delete the video after upload.
 
 If the user asked for Telegram review before YouTube upload, treat the
 Telegram send as a hard gate: wait for the user's explicit go-ahead (their
@@ -104,7 +94,7 @@ reply, in chat or reported back from Telegram) before calling
 `AGENT_GUIDE.md` — do not upload without the confirmation the user asked
 for.
 
-### Step 3.5: Confirm Publication Back to Telegram
+### Step 3.5: Send YouTube URL Back to Telegram
 
 `telegram_notify` has exactly one job (send a message/video to the
 configured Telegram chat) but it is used at **two different moments** with
@@ -113,14 +103,13 @@ tool:
 
 - **Before publishing** (Step 3 above): send the video itself for review.
   `publish_log` entry: `status: "pending_review"`.
-- **After `youtube_upload` succeeds**: send a short confirmation — no video
-  attachment needed, just a caption pointing at the live URL, e.g.
-  `"✅ Published: https://youtu.be/<video_id>"`. This mirrors the
+- **After `youtube_upload` succeeds**: send a short confirmation with the YouTube URL — no video file upload needed for videos over 50 MB, just pass `video_url` pointing to the private upload for review, e.g.
+  `"Uploaded private, siap review: https://youtu.be/<video_id>"`. This mirrors the
   WealthVault pattern's post-upload notification and must not be skipped —
   a human who approved a gated publish expects to hear that it actually
-  went live, not just that the gate was cleared.
+  went live or is ready for review, not just that the gate was cleared.
 
-Do this by calling `telegram_notify` again with the result of
+Do this by calling `telegram_notify` with the result of
 `youtube_upload`, passing the URL (no file upload needed):
 
 ```python
@@ -131,7 +120,7 @@ if yt_result.success:
     telegram = registry.get("telegram_notify")
     telegram.execute({
         "video_url": yt_result.data["url"],
-        "caption": f"✅ Published: {yt_result.data['url']}",
+        "caption": f"Uploaded private, siap review: {yt_result.data['url']}",
         "project_id": project_id,
     })
 ```

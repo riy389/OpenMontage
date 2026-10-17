@@ -148,7 +148,7 @@ class TelegramNotify(BaseTool):
         
         # If URL provided, just send text notification
         if video_url:
-            note = f"{caption}\n\nVideo URL: {video_url}"
+            note = f"{caption}\n\n{video_url}"
             try:
                 response = requests.post(
                     f"{TELEGRAM_API_BASE}/bot{token}/sendMessage",
@@ -166,9 +166,7 @@ class TelegramNotify(BaseTool):
                 if oversized:
                     note = (
                         f"{caption}\n\n"
-                        f"[Video too large for Telegram: {size / (1024 * 1024):.1f} MB, "
-                        f"limit is {MAX_VIDEO_BYTES / (1024 * 1024):.0f} MB]\n"
-                        f"Local path: {video_path}"
+                        f"Video over 50MB, please open link: {video_path}"
                     ).strip()
                     response = requests.post(
                         f"{TELEGRAM_API_BASE}/bot{token}/sendMessage",
