@@ -47,8 +47,7 @@ packaged and ask what to do next:
 Export packaged at exports/<project_name>/.
 
 Distribution options available:
-  - Send to Telegram for review (telegram_notify) — configured
-  - Upload to YouTube (youtube_upload) — configured, visibility: [ask]
+  - Upload to YouTube as private, then send the URL to Telegram (youtube_upload) — configured
   - Local export only, no further distribution
 
 Which would you like?
@@ -60,68 +59,18 @@ the Mandatory Preflight provider menu. Do not nag if the user declines.
 
 ### Step 3: Execute the Chosen Provider(s)
 
-Each provider tool is called like any other `BaseTool`:
-
-```python
-from tools.tool_registry import registry
-
-telegram = registry.get("telegram_notify")
-result = telegram.execute({
-    "video_path": render_report["output_path"],
-    "caption": proposal_packet["title"],
-    "project_id": project_id,
-})
-```
-
-`result` is a `ToolResult` (`.success`, `.data`, `.error`, per
+Each provider tool is called like any other `BaseTool`. `result` is a `ToolResult` (`.success`, `.data`, `.error`, per
 `tools/base_tool.py`). On success, `result.data` should carry enough to
 build a `publish_log` entry (see Step 4) — at minimum a `timestamp` and, if
 the platform returns one, a `url` or message reference.
 
-**Telegram is a human-approval gate, not a publish destination.** This
-mirrors the existing WealthVault pattern exactly: a successful
-`telegram_notify` call means the video is now awaiting a human decision in
-Telegram — record it as `status: "pending_review"` in the `publish_log`
-entry, never `"published"`. Nothing downstream (especially `youtube_upload`)
-may run until that approval comes back.
+**YouTube upload is a real publish action**, and it happens as a **Review Gate Pattern**: upload the video as `private`, then send the YouTube URL via `telegram_notify` for the reviewer (Riyanto) to check. The agent never uploads with `public` visibility. Once satisfied, the reviewer manually publishes via YouTube Studio. The tool's OAuth scope is limited to `youtube.upload`; it cannot modify or delete the video after upload.
 
-**YouTube upload is a real publish action**, and it only happens *after*
-the Telegram approval is received (or immediately, if the user opted out of
-Telegram review for this project at Step 2). Treat a successful
-`youtube_upload` call as `status: "published"`, and capture `video_id`,
-`url`, and `visibility` from the result.
+### Step 3.5: Send YouTube URL Back to Telegram
 
-**Default visibility is private.** YouTube uploads default to `private`
-(Review Gate Pattern). The reviewer (Riyanto) checks the video at
-https://youtu.be/<video_id>, then manually publishes via YouTube Studio
-if satisfied. The tool's OAuth scope is limited to `youtube.upload`;
-it cannot modify or delete the video after upload.
+`telegram_notify` is used after `youtube_upload` succeeds: send a short confirmation with the YouTube URL — no video file upload needed for videos over 50 MB, just pass `video_url` pointing to the private upload for review, e.g. `"Uploaded private, siap review: https://youtu.be/<video_id>"`. This mirrors the WealthVault pattern's post-upload notification and must not be skipped — a reviewer expects to hear that it is ready for review, not just that the gate was cleared.
 
-If the user asked for Telegram review before YouTube upload, treat the
-Telegram send as a hard gate: wait for the user's explicit go-ahead (their
-reply, in chat or reported back from Telegram) before calling
-`youtube_upload`. This mirrors "No Unilateral Substitutions" in
-`AGENT_GUIDE.md` — do not upload without the confirmation the user asked
-for.
-
-### Step 3.5: Confirm Publication Back to Telegram
-
-`telegram_notify` has exactly one job (send a message/video to the
-configured Telegram chat) but it is used at **two different moments** with
-two different meanings, distinguished by what you pass, not by a separate
-tool:
-
-- **Before publishing** (Step 3 above): send the video itself for review.
-  `publish_log` entry: `status: "pending_review"`.
-- **After `youtube_upload` succeeds**: send a short confirmation — no video
-  attachment needed, just a caption pointing at the live URL, e.g.
-  `"✅ Published: https://youtu.be/<video_id>"`. This mirrors the
-  WealthVault pattern's post-upload notification and must not be skipped —
-  a human who approved a gated publish expects to hear that it actually
-  went live, not just that the gate was cleared.
-
-Do this by calling `telegram_notify` again with the result of
-`youtube_upload`, passing the URL (no file upload needed):
+Do this by calling `telegram_notify` with the result of `youtube_upload`, passing the URL:
 
 ```python
 youtube = registry.get("youtube_upload")
@@ -131,16 +80,12 @@ if yt_result.success:
     telegram = registry.get("telegram_notify")
     telegram.execute({
         "video_url": yt_result.data["url"],
-        "caption": f"✅ Published: {yt_result.data['url']}",
+        "caption": f"Uploaded private, siap review: {yt_result.data['url']}",
         "project_id": project_id,
     })
 ```
 
-This second call does **not** produce its own `pending_review` gate in the
-same sense — it's a notification, not a request for a decision. Still
-record it as its own `publish_log` entry (`platform: "telegram"`,
-`status: "published"` is reasonable here since nothing further is pending
-on it) rather than silently dropping it from the log — see Step 4.
+This call does **not** produce its own `pending_review` gate — it's a notification, not a request for a decision. Still record it as its own `publish_log` entry (`platform: "telegram"`, `status: "published"`) rather than silently dropping it from the log — see Step 4.
 
 ### Step 4: Append to `publish_log` — Do Not Invent Fields
 
@@ -151,25 +96,16 @@ false` at both the root and the entry level. Only these entry fields exist:
 `exported`, `failed`, `draft`, `pending_review`.
 
 Add one entry per provider call, alongside the `export_bundle` entry
-already in the artifact — do not overwrite it. A full run with Telegram
-review + YouTube upload + publish confirmation produces three Telegram/
-YouTube entries in addition to `export_bundle`'s:
-
-```json
-{
-  "platform": "telegram",
-  "status": "pending_review",
-  "timestamp": "2026-09-04T12:00:00+00:00"
-}
-```
+already in the artifact — do not overwrite it. A full run with YouTube
+upload + notification produces two entries in addition to `export_bundle`'s:
 
 ```json
 {
   "platform": "youtube",
-  "status": "published",
+  "status": "pending_review",
   "video_id": "abc123",
   "url": "https://youtu.be/abc123",
-  "visibility": "public",
+  "visibility": "private",
   "timestamp": "2026-09-04T12:05:00+00:00",
   "metadata_used": {
     "title": "...",
@@ -232,16 +168,8 @@ writing `status="completed", human_approved=True`.
    runs. Telegram/YouTube only run if the user opts in at Step 2.
 2. **Never pick a distribution provider silently.** Same rule as
    provider/model choice anywhere else in the pipeline.
-3. **Telegram is a human-approval gate, matching the existing WealthVault
-   pattern** — a video sent to Telegram is `pending_review`, not
-   `published`. YouTube upload (or any further distribution) only proceeds
-   after that approval is explicitly received.
-4. **`telegram_notify` is one tool used twice, for two different purposes**
-   — a pre-publish review request (`pending_review`) and a post-publish
-   confirmation (`status: "published"`, matching WealthVault's "✅
-   Published: <url>" notification). Never skip the second call after a
-   successful `youtube_upload` — silently omitting it leaves the human who
-   approved the gate without confirmation it actually went live.
+3. **YouTube upload is private by default (Review Gate Pattern).** Upload happens first, then URL is sent to Telegram for review. The agent never uploads with `public` visibility. Reviewer manually publishes via YouTube Studio when satisfied.
+4. **`telegram_notify` is one tool used twice, for two different purposes** — a post-upload notification (after `youtube_upload` succeeds) passing `video_url` for review. Never skip the call after a successful `youtube_upload` — sending the private URL for review is part of the gate.
 5. **Never invent `publish_log` fields.** The schema is closed
    (`additionalProperties: false`). Anything that doesn't fit goes in the
    artifact's root `metadata`, not in an entry.
