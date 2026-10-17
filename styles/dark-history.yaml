@@ -55,14 +55,18 @@ audio:
   sfx_style: "subtle low rumbles, wind, distant bells, creaking wood; no jump-scare hits"
   ducking_threshold_db: -3
   narration_formatting:
-    tts_engine_note: "No SSML/pause tags — neither Aura-2 nor Kokoro support them (Aura-2 may fail the request; Kokoro reads them as literal text). Emotion and pacing come entirely from punctuation and sentence structure, and must work the same on either engine until TTS is finalized."
+    tts_engine_note: "Narration engine is Chatterbox Nano, generated one sentence at a time with silence inserted between sentences. No SSML, break tags or paralinguistic tags such as [sigh] or [laugh]: the writer controls rhythm only through punctuation and sentence structure."
     punctuation_rules:
-      - "Period = full pause, intonation resets. Comma = short breath pause. Use both deliberately for breathing rhythm, not just grammar."
-      - "Ellipsis (...) = long dramatic pause with falling tone. Use sparingly — only before a reveal or a death."
-      - "Short, clipped sentences for shock or tension: 'The blade falls. Silence.' Longer flowing sentences for dread/atmosphere build-up."
-      - "One-to-three-word sentence fragments are allowed at emotional beats: 'Nothing. Nothing but silence.'"
-      - "Question marks for genuine or rhetorical questions spoken by the narrator — both engines read these with rising intonation."
-      - "Never use ALL CAPS or exclamation points for emphasis — unreliable across engines (Kokoro ignores them, Aura-2 reads them as shouting, breaking the somber tone). For emphasis, isolate the word/phrase in its own short sentence instead."
+      - "Each sentence is generated separately, with silence added after it: period 400 ms, question mark 450 ms, ellipsis 700 ms, beat boundary 900 ms. The writer controls pauses only through punctuation."
+      - "Comma = breath. Put a comma wherever a speaker would take a breath. Long sentences are allowed (soft limit about 6-8 seconds spoken, taken from the accepted v3 test and still to be tuned), as long as every clause has its breath comma. Do not shorten sentences for their own sake."
+      - "No semicolons and no dashes of any kind (hyphen, en dash or em dash used as a pause). Use a period or a comma. Hyphens inside compound numbers such as ninety-seven are fine."
+      - "Ellipsis (...) = long dramatic pause with falling tone. Use sparingly, only before a reveal or a death. Example: 'The pope orders the corpse dug up... nine months dead.'"
+      - "Question marks only for genuine or rhetorical questions, used sparingly (mostly one rhetorical question before a reveal), with no fixed cap. They are read with rising intonation."
+      - "No one-to-three-word fragments until they have been tested with Nano per-sentence generation."
+      - "Never use ALL CAPS or exclamation points for emphasis. For emphasis, restructure the sentence so the key word comes last."
+      - "Numbers are written as spoken words in narration, years included: 897 = eight hundred and ninety-seven, 56% = fifty-six percent. Years from 1000 on are written the way a speaker says them (1518 = fifteen eighteen); check by listening."
+      - "Titles and abbreviations are written out in full, never with a period: Mr. = Mister, Mrs. = Missus, Dr. = Doctor, St. = Saint, Stephen VII = Stephen the Seventh. AD and BC are spelled letter by letter (A D, B C). Other all-caps acronyms are spelled with spaces between the letters. Reason (assumption, untested): a period inside an abbreviation can be read by the sentence splitter as the end of a sentence."
+      - "Unusual names go in the section's pronunciation_guides."
     per_scene_requirement: "Vary sentence length and rhythm scene-to-scene so the full narration doesn't sound monotone when read end-to-end. Avoid 3+ consecutive scenes with identical sentence structure."
 
 asset_generation:
