@@ -36,9 +36,7 @@ from tools.base_tool import (
 TELEGRAM_API_BASE = "https://api.telegram.org"
 
 # Telegram's sendVideo caps at 50 MB over the Bot API. Above this, execute()
-# falls back to a text notification with the local file path instead of
-# failing outright — the reviewer still gets pinged, they just open the
-# file from the Codespace/VPS directly.
+# returns an error recommending YouTube private upload + video_url instead of failing.
 MAX_VIDEO_BYTES = 50 * 1024 * 1024
 
 
@@ -75,7 +73,7 @@ class TelegramNotify(BaseTool):
     ]
     not_good_for = [
         "publishing to an audience (Telegram is a review channel, not a destination)",
-        "videos over 50 MB (Bot API sendVideo limit — falls back to a text notification with the local path)",
+        "videos over 50 MB (Bot API sendVideo limit — kirim video_url untuk video di atas 50 MB)",
     ]
 
     input_schema = {
@@ -145,10 +143,9 @@ class TelegramNotify(BaseTool):
             )
 
         caption = inputs.get("caption", "")
-        
         # If URL provided, just send text notification
         if video_url:
-            note = f"{caption}\n\n{video_url}"
+            note = f"{caption}\n\nVideo URL: {video_url}"
             try:
                 response = requests.post(
                     f"{TELEGRAM_API_BASE}/bot{token}/sendMessage",
@@ -164,15 +161,7 @@ class TelegramNotify(BaseTool):
 
             try:
                 if oversized:
-                    note = (
-                        f"{caption}\n\n"
-                        f"Video over 50MB, please open link: {video_path}"
-                    ).strip()
-                    response = requests.post(
-                        f"{TELEGRAM_API_BASE}/bot{token}/sendMessage",
-                        data={"chat_id": chat_id, "text": note},
-                        timeout=30,
-                    )
+                    return ToolResult(success=False, error="Video over 50 MB: upload ke YouTube private, lalu kirim video_url.")
                 else:
                     with open(video_path, "rb") as f:
                         response = requests.post(

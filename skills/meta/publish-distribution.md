@@ -47,8 +47,7 @@ packaged and ask what to do next:
 Export packaged at exports/<project_name>/.
 
 Distribution options available:
-  - Send to Telegram for review (telegram_notify) — configured
-  - Upload to YouTube (youtube_upload) — configured, visibility: [ask]
+  - Upload YouTube private, lalu kirim URL ke Telegram (youtube_upload) — configured
   - Local export only, no further distribution
 
 Which would you like?
@@ -86,13 +85,6 @@ entry, never `"published"`. Nothing downstream (especially `youtube_upload`)
 may run until that approval comes back.
 
 **YouTube upload is a real publish action**, and it happens as a **Review Gate Pattern**: upload the video as `private`, then send the YouTube URL via `telegram_notify` for the reviewer (Riyanto) to check. The agent never uploads with `public` visibility. Once satisfied, the reviewer manually publishes via YouTube Studio. The tool's OAuth scope is limited to `youtube.upload`; it cannot modify or delete the video after upload.
-
-If the user asked for Telegram review before YouTube upload, treat the
-Telegram send as a hard gate: wait for the user's explicit go-ahead (their
-reply, in chat or reported back from Telegram) before calling
-`youtube_upload`. This mirrors "No Unilateral Substitutions" in
-`AGENT_GUIDE.md` — do not upload without the confirmation the user asked
-for.
 
 ### Step 3.5: Send YouTube URL Back to Telegram
 
@@ -155,10 +147,10 @@ YouTube entries in addition to `export_bundle`'s:
 ```json
 {
   "platform": "youtube",
-  "status": "published",
+  "status": "pending_review",
   "video_id": "abc123",
   "url": "https://youtu.be/abc123",
-  "visibility": "public",
+  "visibility": "private",
   "timestamp": "2026-09-04T12:05:00+00:00",
   "metadata_used": {
     "title": "...",
@@ -221,16 +213,8 @@ writing `status="completed", human_approved=True`.
    runs. Telegram/YouTube only run if the user opts in at Step 2.
 2. **Never pick a distribution provider silently.** Same rule as
    provider/model choice anywhere else in the pipeline.
-3. **Telegram is a human-approval gate, matching the existing WealthVault
-   pattern** — a video sent to Telegram is `pending_review`, not
-   `published`. YouTube upload (or any further distribution) only proceeds
-   after that approval is explicitly received.
-4. **`telegram_notify` is one tool used twice, for two different purposes**
-   — a pre-publish review request (`pending_review`) and a post-publish
-   confirmation (`status: "published"`, matching WealthVault's "✅
-   Published: <url>" notification). Never skip the second call after a
-   successful `youtube_upload` — silently omitting it leaves the human who
-   approved the gate without confirmation it actually went live.
+3. **YouTube upload is private by default (Review Gate Pattern).** Upload happens first, then URL is sent to Telegram for review. The agent never uploads with `public` visibility. Reviewer manually publishes via YouTube Studio when satisfied.
+4. **`telegram_notify` is one tool used twice, for two different purposes** — a post-upload notification (after `youtube_upload` succeeds) passing `video_url` for review. Never skip the call after a successful `youtube_upload` — sending the private URL for review is part of the gate.
 5. **Never invent `publish_log` fields.** The schema is closed
    (`additionalProperties: false`). Anything that doesn't fit goes in the
    artifact's root `metadata`, not in an entry.
