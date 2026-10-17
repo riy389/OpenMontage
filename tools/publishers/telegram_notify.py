@@ -36,7 +36,7 @@ from tools.base_tool import (
 TELEGRAM_API_BASE = "https://api.telegram.org"
 
 # Telegram's sendVideo caps at 50 MB over the Bot API. Above this, execute()
-# returns an error recommending YouTube private upload + video_url instead of failing.
+# returns an error asking for video_url (upload to YouTube private first).
 MAX_VIDEO_BYTES = 50 * 1024 * 1024
 
 
