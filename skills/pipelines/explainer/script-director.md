@@ -271,6 +271,7 @@ Applies only when the active playbook is `dark-history`. Where it conflicts with
 
 **Delivery**
 - `provider_text` uses punctuation only: no SSML or `<break>` tags, and no paralinguistic tags such as [laugh] or [sigh] until the Chatterbox Nano test is decided. This overrides the SSML rows in the Speaker Directions table above.
+- Narration text follows `audio.narration_formatting.punctuation_rules` in `styles/dark-history.yaml`: breath commas, no dashes or semicolons, sparing ellipsis and questions, numbers, years, titles and abbreviations written as spoken words. Unusual names go in the section's `pronunciation_guides`.
 
 **Word budget**
 - Long-form target is ~1,250 words (range 1,150-1,300), stated as an 8-9 minute voiceover (~140-155 wpm). Confirm the real rate against the selected TTS engine's measured audio duration before locking the budget.
@@ -332,7 +333,8 @@ SENSITIVE EVENTS
 War, genocide, disaster, disease, execution, slavery: serious and respectful. No gore, no invented last words, no collective guilt without evidence, no suffering as a shortcut to emotion. Emotion comes from documented circumstances, choices and losses.
 
 STYLE
-Short to medium sentences for speaking. Concrete nouns, active verbs. Vary rhythm. Build toward ONE emotion. No slang, generic horror vocabulary, repeated rhetorical questions, ALL CAPS or exclamation marks.
+Sentences may be long, as long as every clause has a breath comma; do not shorten sentences for their own sake. Concrete nouns, active verbs. Vary rhythm. Build toward ONE emotion. No slang, generic horror vocabulary, repeated rhetorical questions, ALL CAPS or exclamation marks.
+No semicolons and no dashes; use a period or a comma. Use an ellipsis only before a reveal or a death. Write numbers, years, titles and abbreviations as spoken words (eight hundred and ninety-seven, Mister, Saint, Stephen the Seventh, A D).
 
 VISUAL CUE (one per beat)
 One wide still image showing what the Traveler sees. The Traveler appears in at most half of the cues, only from behind or in shadow. Period-accurate buildings, clothing and tools. Never: close-ups of hands or text, objects anachronistic to the period, facts not in the narration, several shots in one cue. Lighting and style are set by the playbook, so do not specify them.
