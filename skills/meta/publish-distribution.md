@@ -44,8 +44,10 @@ proposed, not assumed. After `export_bundle` succeeds, tell the user what
 packaged and ask what to do next:
 
 ```
+Export packaged at exports/<project_name>/.
+
 Distribution options available:
-  - Upload YouTube private, lalu kirim URL ke Telegram (youtube_upload) — configured
+  - Upload to YouTube as private, then send the URL to Telegram (youtube_upload) — configured
   - Local export only, no further distribution
 
 Which would you like?
@@ -57,20 +59,7 @@ the Mandatory Preflight provider menu. Do not nag if the user declines.
 
 ### Step 3: Execute the Chosen Provider(s)
 
-Each provider tool is called like any other `BaseTool`:
-
-```python
-from tools.tool_registry import registry
-
-telegram = registry.get("telegram_notify")
-result = telegram.execute({
-    "video_path": render_report["output_path"],
-    "caption": proposal_packet["title"],
-    "project_id": project_id,
-})
-```
-
-`result` is a `ToolResult` (`.success`, `.data`, `.error`, per
+Each provider tool is called like any other `BaseTool`. `result` is a `ToolResult` (`.success`, `.data`, `.error`, per
 `tools/base_tool.py`). On success, `result.data` should carry enough to
 build a `publish_log` entry (see Step 4) — at minimum a `timestamp` and, if
 the platform returns one, a `url` or message reference.
@@ -79,7 +68,7 @@ the platform returns one, a `url` or message reference.
 
 ### Step 3.5: Send YouTube URL Back to Telegram
 
-`telegram_notify` is used after `youtube_upload` succeeds: send a short confirmation with the YouTube URL — no video file upload needed for videos over 50 MB, just pass `video_url` pointing to the private upload for review, e.g. `"Uploaded private, siap review: https://youtu.be/<video_id>"`. This mirrors the WealthVault pattern's post-upload notification and must not be skipped — a human who approved a gated publish expects to hear that it is ready for review, not just that the gate was cleared.
+`telegram_notify` is used after `youtube_upload` succeeds: send a short confirmation with the YouTube URL — no video file upload needed for videos over 50 MB, just pass `video_url` pointing to the private upload for review, e.g. `"Uploaded private, siap review: https://youtu.be/<video_id>"`. This mirrors the WealthVault pattern's post-upload notification and must not be skipped — a reviewer expects to hear that it is ready for review, not just that the gate was cleared.
 
 Do this by calling `telegram_notify` with the result of `youtube_upload`, passing the URL:
 
