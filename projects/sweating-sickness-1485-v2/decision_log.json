@@ -1,0 +1,54 @@
+{
+  "version": "1.0",
+  "project_id": "sweating-sickness-1485-v2",
+  "decisions": [
+    {
+      "decision_id": "renderer_family_selection",
+      "stage": "proposal",
+      "category": "renderer_family_selection",
+      "subject": "Creative renderer family",
+      "selected": "animation-first",
+      "options_considered": [
+        {
+          "option_id": "animation-first",
+          "label": "animation-first",
+          "score": 1.0,
+          "reason": "Explainer composition works with PNG images"
+        }
+      ],
+      "reason": "Approved animation-first"
+    },
+    {
+      "decision_id": "render_runtime_selection",
+      "stage": "proposal",
+      "category": "render_runtime_selection",
+      "subject": "Composition runtime",
+      "selected": "remotion",
+      "options_considered": [
+        {
+          "option_id": "remotion",
+          "label": "Remotion",
+          "score": 1.0,
+          "reason": "Supported anime_scene"
+        }
+      ],
+      "reason": "Approved Remotion"
+    },
+    {
+      "decision_id": "concept_selection",
+      "stage": "proposal",
+      "category": "concept_selection",
+      "subject": "Narrative concept",
+      "selected": "c1",
+      "options_considered": [
+        {
+          "option_id": "c1",
+          "label": "The 8-Hour Death Sentence",
+          "score": 1.0,
+          "reason": "Strongest hook"
+        }
+      ],
+      "reason": "Concept c1 selected"
+    }
+  ]
+}

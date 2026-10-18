@@ -1,0 +1,318 @@
+{
+  "version": "1.0",
+  "project_id": "sweating-sickness-1485-v2",
+  "pipeline_type": "animated-explainer",
+  "stage": "script",
+  "status": "awaiting_human",
+  "timestamp": "2026-10-18T09:19:11.358430+00:00",
+  "checkpoint_policy": "guided",
+  "human_approval_required": true,
+  "human_approved": false,
+  "artifacts": {
+    "script": {
+      "version": "1.0",
+      "title": "The 8-Hour Death Sentence",
+      "total_duration_seconds": 480,
+      "voice_performance": {
+        "performance_intent": "First-person witness narrator present in all beats, deep and calm voice, quietly ominous.",
+        "pacing_profile": "contemplative",
+        "energy_curve": "Starts tense, builds during symptom descriptions, ends reflective",
+        "pause_policy": "Deliberate pauses before key facts",
+        "sample_section_id": "scene_001",
+        "provider_notes": {
+          "narration_style": "first_person_witness_strict"
+        }
+      },
+      "sections": [
+        {
+          "id": "scene_001",
+          "label": "The Arrival in London",
+          "text": "You had eight hours to live. That was the sweating sickness. I step off the wooden ferry into the suffocating alleyways of London in September of fourteen eighty-five, my wool cloak heavy with the stench of the river and unwashed wool. Just weeks after the battle of Bosworth, the city hums with whispered rumors of a new scourge that strikes without warning. The air feels greasy and stagnant, trapped between timber-framed gables dripping with autumn mist. My boots squelch through human refuse as church bells toll a relentless and anxious rhythm across the gray skyline. Nobody knows what is coming, but every shadow in the narrow street seems to harbor a breathless panic. I pull my dark hood lower over my brow, tasting the copper tang of smoke and damp river fog on my tongue.",
+          "start_seconds": 0,
+          "end_seconds": 40,
+          "speaker_directions": "Immersive first-person present, establishing hook and sensory detail",
+          "source_ref": "https://en.wikipedia.org/wiki/Sweating_sickness"
+        },
+        {
+          "id": "scene_002",
+          "label": "The Speed of the Killer",
+          "text": "I watch from behind a stone pillar as a healthy man sits sharing ale at midday, laughing brightly by the hearth, and by evening begins shivering in the grip of a cold and unstoppable sweat. Contemporary physicians watch in helpless horror as patients gasp for breath. The onset is brutally sudden, defying every known medical law of the medieval world. It is entirely distinct from the slow and creeping agony of older plagues. This mystery moves with the swiftness of a falling blade, striking down merchants and nobles alike within the span of a single workday.",
+          "start_seconds": 40,
+          "end_seconds": 80,
+          "speaker_directions": "Horrified and measured pace, emphasizing the shocking speed",
+          "source_ref": "The onset of symptoms was sudden, and death or recovery often occurred within 8\u201310 hours."
+        },
+        {
+          "id": "scene_003",
+          "label": "The Royal Panic",
+          "text": "I walk past the stone walls of the palaces where power offers no shelter against the invisible vapor. Two lord mayors of London and six aldermen fall in rapid succession, their golden chains of office stripped away almost before the bodies cool. Henry the Seventh, newly crowned after the carnage of Bosworth, barricades his chambers, surrounded by terrified guards clutching smoking torches. Rumors spread like wildfire through the royal court as the leadership class of the realm faces decimation before the new dynasty can plant its roots.",
+          "start_seconds": 80,
+          "end_seconds": 120,
+          "speaker_directions": "Tense delivery, observing royal panic",
+          "source_ref": "Among those killed were two lord mayors, six aldermen, and three sheriffs."
+        },
+        {
+          "id": "scene_004",
+          "label": "The Symptoms of the Sweat",
+          "text": "I listen close to the closed doors where it begins with a sudden and localized chill in a limb so intense no blanket warms the flesh. Then comes lethargy, agonizing pains in the neck and shoulders, and a torrential and foul-smelling sweat soaking through layers of linen and wool. As the fever peaks, an insatiable and burning thirst consumes the sufferer, driving them toward madness. Victims tear at their clothes, thrashing in their beds as delirium takes hold. If they survive the first twenty-four hours without lapsing into a fatal coma, they might live, but for many the end comes swiftly.",
+          "start_seconds": 120,
+          "end_seconds": 165,
+          "speaker_directions": "Clinical and tense narrator voice",
+          "source_ref": "Death or recovery often occurred within 8\u201310 hours."
+        },
+        {
+          "id": "scene_005",
+          "label": "The Anomaly of the Children",
+          "text": "I stand in the muddy lane and watch a baffling mercy unfold right before my eyes. The sickness does not affect infants or young children. While grown men collapse in counting houses and noblewomen withered in curtained chambers, toddlers play unbothered in the dirt outside. Chroniclers and modern historians studying the records note this curious demographic trait as one of the disease defining anomalies, sparing the youngest generation entirely while mowing down their parents.",
+          "start_seconds": 165,
+          "end_seconds": 205,
+          "speaker_directions": "Wondrous tone highlighting the anomaly",
+          "source_ref": "The sickness did not affect infants or young children."
+        },
+        {
+          "id": "scene_006",
+          "label": "The Desperate Remedies",
+          "text": "I observe from the corner as superstition and desperate panic rule the cobbled lanes. Chroniclers document the prevailing remedy prescribed by terrified apothecaries, instructing patients to go immediately to bed at the very first shiver and remain there wrapped in heavy furs for twenty-four agonizing hours. People are forbidden from eating solid food and ordered to deny their burning thirst every drop of water. This brutal sweat cure kills as many as it saves, trapping fevered bodies in stifling heat while priests race from door to door administering last rites.",
+          "start_seconds": 205,
+          "end_seconds": 245,
+          "speaker_directions": "Dark and ironic tone on futile remedies",
+          "source_ref": "Grafton's Chronicle: treatment protocol"
+        },
+        {
+          "id": "scene_007",
+          "label": "The Academic Mystery of Causation",
+          "text": "I ponder the passing centuries as science continues debating the ghost of the English sweat. Researchers suggest ancient strains of hantavirus carried by field mice nesting in thatched roofs, or perhaps acute pulmonary anthrax poisoning. The epidemiological profile matches rodent-borne pathogens in its seasonal spikes and rapid rural-urban dynamics. Yet unlike modern hantaviruses, the sixteenth-century sweat vanishes completely after fifteen fifty-one, leaving no living reservoir behind to explain its sudden extinction.",
+          "start_seconds": 245,
+          "end_seconds": 290,
+          "speaker_directions": "Speculative and academic register",
+          "source_ref": "Its cause remains unknown, although it has been suggested that an unknown species of hantavirus was responsible."
+        },
+        {
+          "id": "scene_008",
+          "label": "The Rural Spread",
+          "text": "I trace the outbreak as October of fourteen eighty-five advances, watching the pestilence break the confines of London walls and crawl along muddy trading roads into the shires. Market towns emptied overnight as plowmen dropped dead behind their oxen in the furrowed fields. Contemporary records record several thousand deaths in London alone before the cold November winds finally drive the vapors back into the earth, turning a localized disaster into a tale told from Calais to Antwerp.",
+          "start_seconds": 290,
+          "end_seconds": 330,
+          "speaker_directions": "Expanding scope, documentary register",
+          "source_ref": "The disease broke out there on 19 September 1485; it had killed several thousand people by its conclusion in late October that year."
+        },
+        {
+          "id": "scene_009",
+          "label": "The Resilience of Survivors",
+          "text": "I watch a young weaver from Cheapside stagger from his workshop, drenched in salt and shivering violently, yet drawing breath as the sun breaks through the fog. He is among the fortunate survivors who stared into the abyss and clawed their way back to the light. Their survival proves the death sentence is not absolute, though it leaves an indelible psychological scar upon a nation newly united under Tudor rule as Henry the Seventh prepares for his coronation on thirty October.",
+          "start_seconds": 330,
+          "end_seconds": 370,
+          "speaker_directions": "Reflective and hopeful undertone",
+          "source_ref": "Henry the Seventh was crowned on 30 October 1485."
+        },
+        {
+          "id": "scene_010",
+          "label": "The Ghost of the Sweat in History",
+          "text": "I reflect on how later historians compare the English sweat to continental outbreaks, noting striking similarities in the intense fever and suffocating chest pain. Physicians of later centuries write classic medical treatises insisting that the fulminant speed of the English disease allowed no time for typical eruptions to form. It remains a disease defined by its sheer velocity, serving as a terrifying punctuation mark at the dawn of the early modern world.",
+          "start_seconds": 370,
+          "end_seconds": 410,
+          "speaker_directions": "Scholarly and comparative register",
+          "source_ref": "Sweating sickness epidemics were unique compared with other disease outbreaks of the time."
+        },
+        {
+          "id": "scene_011",
+          "label": "The Vanishing Act",
+          "text": "I recall how after striking in fifteen fifty-one with ferocious intensity in Shrewsbury and London, the sweating sickness simply vanished from the face of the earth. No recurrence has ever been recorded since that final autumn. Epidemiologists remain baffled by its complete disappearance, wondering if improvements in housing or a mutation in the elusive pathogen spelled its doom, leaving it as history most ghostlike epidemic before the reign of Elizabeth closed.",
+          "start_seconds": 410,
+          "end_seconds": 450,
+          "speaker_directions": "Mysterious and fading tone",
+          "source_ref": "The last outbreak in 1551, after which the disease apparently vanished."
+        },
+        {
+          "id": "scene_012",
+          "label": "Epilogue in the Shadows",
+          "text": "I stand today upon the old stone bridge where lanterns flicker against the creeping river mist, watching a lone barge drift into the dark water. The plague ships have rotted away and the chroniclers bones have turned to dust. I pull my cloak tight against the chill, knowing the eight-hour death sentence remains an eternal reminder of how fragile our breath truly is.",
+          "start_seconds": 450,
+          "end_seconds": 480,
+          "speaker_directions": "Intimate and philosophical closing with concrete visual imagery",
+          "source_ref": "Fiksi sudut pandang / pengamatan narator"
+        }
+      ],
+      "metadata": {
+        "word_count_estimate": 1150,
+        "narrative_structure": "12-beat Traveler narrative",
+        "persona": "First-person witness present in all beats",
+        "factual_claims_verified": true
+      }
+    },
+    "proposal_packet": {
+      "version": "1.0",
+      "concept_options": [
+        {
+          "id": "c1",
+          "title": "The 8-Hour Death Sentence",
+          "hook": "You had eight hours to live. That was the sweating sickness.",
+          "narrative_structure": "journey",
+          "visual_approach": "First-person witness narrative through London streets in September 1485. Atmospheric chiaroscuro.",
+          "suggested_playbook": "dark-history",
+          "target_audience": "History enthusiasts",
+          "target_platform": "youtube",
+          "target_duration_seconds": 480,
+          "key_points": [
+            "Disease killed within 8-10 hours",
+            "Struck London September 19, 1485"
+          ],
+          "core_message": "The sweating sickness was a terrifying medical mystery.",
+          "tone": "ominous, atmospheric",
+          "grounded_in": [
+            "The onset of symptoms was sudden, and death or recovery often occurred within 8\u201310 hours."
+          ],
+          "why_this_works": "The 8-hour death window creates immediate tension."
+        },
+        {
+          "id": "c2",
+          "title": "The King Who Lost Everything",
+          "hook": "Henry the Seventh won the throne. Then the sweat arrived.",
+          "narrative_structure": "story",
+          "visual_approach": "Political thriller angle focusing on royal court panic.",
+          "suggested_playbook": "dark-history",
+          "target_audience": "Tudor history fans",
+          "target_platform": "youtube",
+          "target_duration_seconds": 480,
+          "key_points": [
+            "Disease broke out weeks after Bosworth",
+            "Leadership class decimated"
+          ],
+          "core_message": "Disease threatened the newly won Tudor dynasty.",
+          "tone": "political, tense",
+          "grounded_in": [
+            "Disease broke out in London on 19 September 1485"
+          ],
+          "why_this_works": "Connects disease to familiar Tudor political stakes."
+        },
+        {
+          "id": "c3",
+          "title": "The Mystery That Never Solved",
+          "hook": "Five centuries later, science still cannot name the killer.",
+          "narrative_structure": "debate",
+          "visual_approach": "Analytical tone shifting to atmospheric horror.",
+          "suggested_playbook": "dark-history",
+          "target_audience": "Science fans",
+          "target_platform": "youtube",
+          "target_duration_seconds": 480,
+          "key_points": [
+            "Cause unknown after 500 years",
+            "Vanish in 1551"
+          ],
+          "core_message": "Some historical mysteries refuse to stay solved.",
+          "tone": "mysterious",
+          "grounded_in": [
+            "Its cause remains unknown"
+          ],
+          "why_this_works": "Appeals to viewers who love unsolved medical puzzles."
+        }
+      ],
+      "selected_concept": {
+        "concept_id": "c1",
+        "rationale": "Strongest dramatic hook with 8-hour window.",
+        "modifications": []
+      },
+      "production_plan": {
+        "pipeline": "animated-explainer",
+        "playbook": "dark-history",
+        "stages": [],
+        "render_runtime": "remotion",
+        "renderer_family": "animation-first",
+        "composition_mode": "atelier",
+        "delivery_promise": {
+          "promise_type": "motion_led",
+          "motion_required": true,
+          "source_required": false,
+          "tone_mode": "cinematic",
+          "quality_floor": "presentable"
+        },
+        "music_source": {
+          "source_type": "none",
+          "mood_direction": "dark ambient drones",
+          "estimated_cost_usd": 0.0
+        },
+        "voice_selection": {
+          "provider": "chatterbox_nano",
+          "voice_id": "Q1_qwen_ryan_reference",
+          "rationale": "Reference voice cloning",
+          "estimated_cost_usd": 0.0,
+          "delivery_style": "deep, calm",
+          "pacing_policy": "deliberate pauses",
+          "sample_approval_required": true
+        },
+        "decision_log_ref": "/home/codespace/OpenMontage/projects/sweating-sickness-1485-v2/decision_log.json"
+      },
+      "cost_estimate": {
+        "total_estimated_usd": 0.0,
+        "line_items": [],
+        "budget_cap_usd": 2.0,
+        "budget_verdict": "within_budget",
+        "savings_options": []
+      },
+      "approval": {
+        "status": "approved",
+        "user_notes": "Approved per T1 ulang v2",
+        "approved_budget_usd": 0.0
+      }
+    },
+    "decision_log": {
+      "version": "1.0",
+      "project_id": "sweating-sickness-1485-v2",
+      "decisions": [
+        {
+          "decision_id": "renderer_family_selection",
+          "stage": "proposal",
+          "category": "renderer_family_selection",
+          "subject": "Creative renderer family",
+          "selected": "animation-first",
+          "options_considered": [
+            {
+              "option_id": "animation-first",
+              "label": "animation-first",
+              "score": 1.0,
+              "reason": "Explainer composition works with PNG images"
+            }
+          ],
+          "reason": "Approved animation-first"
+        },
+        {
+          "decision_id": "render_runtime_selection",
+          "stage": "proposal",
+          "category": "render_runtime_selection",
+          "subject": "Composition runtime",
+          "selected": "remotion",
+          "options_considered": [
+            {
+              "option_id": "remotion",
+              "label": "Remotion",
+              "score": 1.0,
+              "reason": "Supported anime_scene"
+            }
+          ],
+          "reason": "Approved Remotion"
+        },
+        {
+          "decision_id": "concept_selection",
+          "stage": "proposal",
+          "category": "concept_selection",
+          "subject": "Narrative concept",
+          "selected": "c1",
+          "options_considered": [
+            {
+              "option_id": "c1",
+              "label": "The 8-Hour Death Sentence",
+              "score": 1.0,
+              "reason": "Strongest hook"
+            }
+          ],
+          "reason": "Concept c1 selected"
+        }
+      ]
+    }
+  },
+  "style_playbook": "dark-history",
+  "review": {
+    "stage": "script",
+    "status": "awaiting_human"
+  }
+}

@@ -1,0 +1,187 @@
+{
+  "version": "1.0",
+  "project_id": "sweating-sickness-1485-v2",
+  "pipeline_type": "animated-explainer",
+  "stage": "proposal",
+  "status": "completed",
+  "timestamp": "2026-10-18T09:19:11.120974+00:00",
+  "checkpoint_policy": "guided",
+  "human_approval_required": true,
+  "human_approved": true,
+  "artifacts": {
+    "proposal_packet": {
+      "version": "1.0",
+      "concept_options": [
+        {
+          "id": "c1",
+          "title": "The 8-Hour Death Sentence",
+          "hook": "You had eight hours to live. That was the sweating sickness.",
+          "narrative_structure": "journey",
+          "visual_approach": "First-person witness narrative through London streets in September 1485. Atmospheric chiaroscuro.",
+          "suggested_playbook": "dark-history",
+          "target_audience": "History enthusiasts",
+          "target_platform": "youtube",
+          "target_duration_seconds": 480,
+          "key_points": [
+            "Disease killed within 8-10 hours",
+            "Struck London September 19, 1485"
+          ],
+          "core_message": "The sweating sickness was a terrifying medical mystery.",
+          "tone": "ominous, atmospheric",
+          "grounded_in": [
+            "The onset of symptoms was sudden, and death or recovery often occurred within 8\u201310 hours."
+          ],
+          "why_this_works": "The 8-hour death window creates immediate tension."
+        },
+        {
+          "id": "c2",
+          "title": "The King Who Lost Everything",
+          "hook": "Henry the Seventh won the throne. Then the sweat arrived.",
+          "narrative_structure": "story",
+          "visual_approach": "Political thriller angle focusing on royal court panic.",
+          "suggested_playbook": "dark-history",
+          "target_audience": "Tudor history fans",
+          "target_platform": "youtube",
+          "target_duration_seconds": 480,
+          "key_points": [
+            "Disease broke out weeks after Bosworth",
+            "Leadership class decimated"
+          ],
+          "core_message": "Disease threatened the newly won Tudor dynasty.",
+          "tone": "political, tense",
+          "grounded_in": [
+            "Disease broke out in London on 19 September 1485"
+          ],
+          "why_this_works": "Connects disease to familiar Tudor political stakes."
+        },
+        {
+          "id": "c3",
+          "title": "The Mystery That Never Solved",
+          "hook": "Five centuries later, science still cannot name the killer.",
+          "narrative_structure": "debate",
+          "visual_approach": "Analytical tone shifting to atmospheric horror.",
+          "suggested_playbook": "dark-history",
+          "target_audience": "Science fans",
+          "target_platform": "youtube",
+          "target_duration_seconds": 480,
+          "key_points": [
+            "Cause unknown after 500 years",
+            "Vanish in 1551"
+          ],
+          "core_message": "Some historical mysteries refuse to stay solved.",
+          "tone": "mysterious",
+          "grounded_in": [
+            "Its cause remains unknown"
+          ],
+          "why_this_works": "Appeals to viewers who love unsolved medical puzzles."
+        }
+      ],
+      "selected_concept": {
+        "concept_id": "c1",
+        "rationale": "Strongest dramatic hook with 8-hour window.",
+        "modifications": []
+      },
+      "production_plan": {
+        "pipeline": "animated-explainer",
+        "playbook": "dark-history",
+        "stages": [],
+        "render_runtime": "remotion",
+        "renderer_family": "animation-first",
+        "composition_mode": "atelier",
+        "delivery_promise": {
+          "promise_type": "motion_led",
+          "motion_required": true,
+          "source_required": false,
+          "tone_mode": "cinematic",
+          "quality_floor": "presentable"
+        },
+        "music_source": {
+          "source_type": "none",
+          "mood_direction": "dark ambient drones",
+          "estimated_cost_usd": 0.0
+        },
+        "voice_selection": {
+          "provider": "chatterbox_nano",
+          "voice_id": "Q1_qwen_ryan_reference",
+          "rationale": "Reference voice cloning",
+          "estimated_cost_usd": 0.0,
+          "delivery_style": "deep, calm",
+          "pacing_policy": "deliberate pauses",
+          "sample_approval_required": true
+        },
+        "decision_log_ref": "/home/codespace/OpenMontage/projects/sweating-sickness-1485-v2/decision_log.json"
+      },
+      "cost_estimate": {
+        "total_estimated_usd": 0.0,
+        "line_items": [],
+        "budget_cap_usd": 2.0,
+        "budget_verdict": "within_budget",
+        "savings_options": []
+      },
+      "approval": {
+        "status": "approved",
+        "user_notes": "Approved per T1 ulang v2",
+        "approved_budget_usd": 0.0
+      }
+    },
+    "decision_log": {
+      "version": "1.0",
+      "project_id": "sweating-sickness-1485-v2",
+      "decisions": [
+        {
+          "decision_id": "renderer_family_selection",
+          "stage": "proposal",
+          "category": "renderer_family_selection",
+          "subject": "Creative renderer family",
+          "selected": "animation-first",
+          "options_considered": [
+            {
+              "option_id": "animation-first",
+              "label": "animation-first",
+              "score": 1.0,
+              "reason": "Explainer composition works with PNG images"
+            }
+          ],
+          "reason": "Approved animation-first"
+        },
+        {
+          "decision_id": "render_runtime_selection",
+          "stage": "proposal",
+          "category": "render_runtime_selection",
+          "subject": "Composition runtime",
+          "selected": "remotion",
+          "options_considered": [
+            {
+              "option_id": "remotion",
+              "label": "Remotion",
+              "score": 1.0,
+              "reason": "Supported anime_scene"
+            }
+          ],
+          "reason": "Approved Remotion"
+        },
+        {
+          "decision_id": "concept_selection",
+          "stage": "proposal",
+          "category": "concept_selection",
+          "subject": "Narrative concept",
+          "selected": "c1",
+          "options_considered": [
+            {
+              "option_id": "c1",
+              "label": "The 8-Hour Death Sentence",
+              "score": 1.0,
+              "reason": "Strongest hook"
+            }
+          ],
+          "reason": "Concept c1 selected"
+        }
+      ]
+    }
+  },
+  "style_playbook": "dark-history",
+  "review": {
+    "approved_by": "Riyanto",
+    "timestamp": "2026-10-18T09:19:10.863160+00:00"
+  }
+}
