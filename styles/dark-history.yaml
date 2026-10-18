@@ -60,7 +60,7 @@ audio:
       - "Each sentence is generated separately, with silence added after it: period 400 ms, question mark 450 ms, ellipsis 700 ms, beat boundary 900 ms. The writer controls pauses only through punctuation."
       - "Comma = breath. Put a comma wherever a speaker would take a breath. Long sentences are allowed (soft limit about 6-8 seconds spoken, taken from the accepted v3 test and still to be tuned), as long as every clause has its breath comma. Do not shorten sentences for their own sake."
       - "No semicolons and no dashes of any kind (hyphen, en dash or em dash used as a pause). Use a period or a comma. Hyphens inside compound numbers such as ninety-seven are fine."
-      - "Ellipsis (...) = long dramatic pause with falling tone. Use sparingly, only before a reveal or a death. Example: 'The pope orders the corpse dug up... nine months dead.'"
+      - "Ellipsis (...) = long dramatic pause with falling tone. The sentence splitter treats it as a sentence end, so the words after it start a new capitalized sentence; never continue the same sentence after an ellipsis (use a comma for that, as in test N2b). Use sparingly, only before a reveal or a death. Example (untested with Nano): 'The pope orders the corpse dug up... Nine months in the grave.'"
       - "Question marks only for genuine or rhetorical questions, used sparingly (mostly one rhetorical question before a reveal), with no fixed cap. They are read with rising intonation."
       - "No one-to-three-word fragments until they have been tested with Nano per-sentence generation."
       - "Never use ALL CAPS or exclamation points for emphasis. For emphasis, restructure the sentence so the key word comes last."
