@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "project_id": "sweating-sickness-1485-v2",
+  "timestamp": "2026-10-18T13:55:00+00:00",
+  "stage": "script",
+  "status": "awaiting_human",
+  "human_approval_required": true,
+  "human_approved": false,
+  "review": {
+    "stage": "script",
+    "status": "awaiting_human",
+    "timestamp": "2026-10-18T13:55:00+00:00"
+  }
+}
