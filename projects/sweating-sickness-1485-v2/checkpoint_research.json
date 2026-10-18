@@ -4,7 +4,7 @@
   "pipeline_type": "animated-explainer",
   "stage": "research",
   "status": "completed",
-  "timestamp": "2026-10-18T09:41:34.971884+00:00",
+  "timestamp": "2026-10-18T13:50:16.444404+00:00",
   "checkpoint_policy": "guided",
   "human_approval_required": false,
   "human_approved": true,
@@ -82,7 +82,7 @@
           "claim": "The last outbreak occurred in 1551, after which the disease apparently vanished.",
           "source_url": "https://en.wikipedia.org/wiki/Sweating_sickness",
           "credibility": "secondary_source",
-          "surprise_factor": "surprising",
+          "surprise_factor": "notable",
           "usable_as": "script_anchor"
         }
       ],
@@ -167,6 +167,6 @@
   "style_playbook": "dark-history",
   "review": {
     "status": "completed",
-    "timestamp": "2026-10-18T09:41:34.845476+00:00"
+    "timestamp": "2026-10-18T13:50:16.318964+00:00"
   }
 }

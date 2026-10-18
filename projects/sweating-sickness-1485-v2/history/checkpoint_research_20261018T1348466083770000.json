@@ -1,0 +1,172 @@
+{
+  "version": "1.0",
+  "project_id": "sweating-sickness-1485-v2",
+  "pipeline_type": "animated-explainer",
+  "stage": "research",
+  "status": "completed",
+  "timestamp": "2026-10-18T13:48:46.608377+00:00",
+  "checkpoint_policy": "guided",
+  "human_approval_required": false,
+  "human_approved": true,
+  "artifacts": {
+    "research_brief": {
+      "version": "1.0",
+      "topic": "Sweating Sickness 1485",
+      "research_date": "2026-10-18",
+      "landscape": {
+        "existing_content": [
+          {
+            "title": "The English Sweat",
+            "source": "youtube",
+            "angle": "historical",
+            "what_it_covers": "outbreaks",
+            "what_it_misses": "first-person witness",
+            "engagement_signal": "100k views"
+          },
+          {
+            "title": "Tudor Plagues",
+            "source": "blog",
+            "angle": "medical",
+            "what_it_covers": "symptoms",
+            "what_it_misses": "atmospheric narrative",
+            "engagement_signal": "high upvotes"
+          },
+          {
+            "title": "The Sweating Sickness mystery",
+            "source": "youtube",
+            "angle": "scientific",
+            "what_it_covers": "hantavirus theory",
+            "what_it_misses": "1485 specific timeline",
+            "engagement_signal": "50k views"
+          }
+        ],
+        "saturated_angles": [
+          "medical-only breakdown",
+          "generic listicle of tudor diseases"
+        ],
+        "underserved_gaps": [
+          "immersive first-person witness experience",
+          "specific 1485 timeline focus"
+        ]
+      },
+      "data_points": [
+        {
+          "claim": "The onset of symptoms was sudden, and death or recovery often occurred within 8-10 hours.",
+          "source_url": "https://en.wikipedia.org/wiki/Sweating_sickness",
+          "credibility": "secondary_source",
+          "surprise_factor": "surprising",
+          "usable_as": "hook"
+        },
+        {
+          "claim": "Disease broke out in London on 19 September 1485, killing two lord mayors, six aldermen, and three sheriffs.",
+          "source_url": "https://en.wikipedia.org/wiki/Sweating_sickness",
+          "credibility": "secondary_source",
+          "surprise_factor": "notable",
+          "usable_as": "script_anchor"
+        },
+        {
+          "claim": "The sickness did not affect infants or young children.",
+          "source_url": "https://en.wikipedia.org/wiki/Sweating_sickness",
+          "credibility": "secondary_source",
+          "surprise_factor": "surprising",
+          "usable_as": "script_anchor"
+        },
+        {
+          "claim": "It had killed several thousand people by its conclusion in late October that year.",
+          "source_url": "https://en.wikipedia.org/wiki/Sweating_sickness",
+          "credibility": "secondary_source",
+          "surprise_factor": "notable",
+          "usable_as": "script_anchor"
+        },
+        {
+          "claim": "The last outbreak occurred in 1551, after which the disease apparently vanished.",
+          "source_url": "https://en.wikipedia.org/wiki/Sweating_sickness",
+          "credibility": "secondary_source",
+          "surprise_factor": "notable",
+          "usable_as": "script_anchor"
+        }
+      ],
+      "audience_insights": {
+        "common_questions": [
+          "What caused it?",
+          "Did it kill everyone?",
+          "Why did it stop?"
+        ],
+        "misconceptions": [
+          {
+            "myth": "It killed half the population",
+            "reality": "No, it killed thousands, not millions",
+            "source": "Wikipedia"
+          }
+        ],
+        "knowledge_level": "Intermediate history interest"
+      },
+      "angles_discovered": [
+        {
+          "name": "The 8-Hour Death Sentence",
+          "hook": "You had eight hours to live. That was the sweating sickness.",
+          "type": "narrative",
+          "why_now": "Focus on extreme urgency",
+          "grounded_in": [
+            "The onset of symptoms was sudden, and death or recovery often occurred within 8-10 hours."
+          ]
+        },
+        {
+          "name": "The Political Terror",
+          "hook": "Henry the Seventh faced an unseen scourge.",
+          "type": "narrative",
+          "why_now": "Contextualizes Bosworth victory",
+          "grounded_in": [
+            "Disease broke out in London on 19 September 1485"
+          ]
+        },
+        {
+          "name": "The Medical Mystery",
+          "hook": "Science still cannot solve it.",
+          "type": "evergreen",
+          "why_now": "Modern epidemiological curiosity",
+          "grounded_in": [
+            "Its cause remains unknown"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/wiki/Sweating_sickness",
+          "title": "Sweating sickness Wikipedia",
+          "used_for": "facts",
+          "reliability": "secondary"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Richard_III",
+          "title": "Richard III Wikipedia",
+          "used_for": "chronology",
+          "reliability": "secondary"
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Henry_VII",
+          "title": "Henry VII Wikipedia",
+          "used_for": "political context",
+          "reliability": "secondary"
+        },
+        {
+          "url": "https://www.bmj.com/content/316/7142/1391",
+          "title": "BMJ: The Mystery of the English Sweat",
+          "used_for": "medical analysis",
+          "reliability": "primary"
+        },
+        {
+          "url": "https://www.jstor.org/stable/4490899",
+          "title": "JSTOR: Hantavirus and Historical Epidemics",
+          "used_for": "academic context",
+          "reliability": "primary"
+        }
+      ]
+    }
+  },
+  "style_playbook": "dark-history",
+  "review": {
+    "status": "completed",
+    "timestamp": "2026-10-18T13:48:46.329601+00:00"
+  }
+}

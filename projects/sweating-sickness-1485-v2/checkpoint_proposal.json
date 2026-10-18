@@ -4,7 +4,7 @@
   "pipeline_type": "animated-explainer",
   "stage": "proposal",
   "status": "completed",
-  "timestamp": "2026-10-18T09:41:35.122367+00:00",
+  "timestamp": "2026-10-18T13:50:16.578894+00:00",
   "checkpoint_policy": "guided",
   "human_approval_required": true,
   "human_approved": true,
@@ -84,7 +84,101 @@
       "production_plan": {
         "pipeline": "animated-explainer",
         "playbook": "dark-history",
-        "stages": [],
+        "stages": [
+          {
+            "stage": "research",
+            "tools": [
+              {
+                "tool_name": "web_search",
+                "role": "gather sources",
+                "available": true
+              }
+            ],
+            "approach": "Wikipedia + BMJ + JSTOR research"
+          },
+          {
+            "stage": "proposal",
+            "tools": [
+              {
+                "tool_name": "llm_assist",
+                "role": "concept selection",
+                "available": true
+              }
+            ],
+            "approach": "3 concepts, c1 selected"
+          },
+          {
+            "stage": "script",
+            "tools": [
+              {
+                "tool_name": "llm_assist",
+                "role": "narrative writing",
+                "available": true
+              }
+            ],
+            "approach": "12 beat script from Claude draft"
+          },
+          {
+            "stage": "scene_plan",
+            "tools": [
+              {
+                "tool_name": "scene_planner",
+                "role": "shot planning",
+                "available": true
+              }
+            ],
+            "approach": "Shot list per scene",
+            "fallback_if_unavailable": "skip scene_plan"
+          },
+          {
+            "stage": "assets",
+            "tools": [
+              {
+                "tool_name": "image_selector",
+                "role": "generate images",
+                "available": true
+              }
+            ],
+            "approach": "Cloudflare images 1024x576",
+            "fallback_if_unavailable": "use alternative provider"
+          },
+          {
+            "stage": "edit",
+            "tools": [
+              {
+                "tool_name": "ffmpeg",
+                "role": "audio-video sync",
+                "available": true
+              }
+            ],
+            "approach": "Sync narration with images",
+            "fallback_if_unavailable": "manual edit"
+          },
+          {
+            "stage": "compose",
+            "tools": [
+              {
+                "tool_name": "remotion",
+                "role": "compositing",
+                "available": true
+              }
+            ],
+            "approach": "Remotion studio render",
+            "fallback_if_unavailable": "manual composition"
+          },
+          {
+            "stage": "render",
+            "tools": [
+              {
+                "tool_name": "ffmpeg",
+                "role": "final encode",
+                "available": true
+              }
+            ],
+            "approach": "1920x1080 encode",
+            "fallback_if_unavailable": "lower resolution"
+          }
+        ],
         "render_runtime": "remotion",
         "renderer_family": "animation-first",
         "composition_mode": "atelier",
@@ -140,6 +234,18 @@
               "label": "animation-first",
               "score": 1.0,
               "reason": "Explainer composition works with PNG images"
+            },
+            {
+              "option_id": "cinematic-trailer",
+              "label": "cinematic-trailer",
+              "score": 0.5,
+              "reason": "Requires video clips"
+            },
+            {
+              "option_id": "documentary-montage",
+              "label": "documentary-montage",
+              "score": 0.5,
+              "reason": "Requires archive footage"
             }
           ],
           "reason": "Approved animation-first"
@@ -156,6 +262,12 @@
               "label": "Remotion",
               "score": 1.0,
               "reason": "Supported anime_scene"
+            },
+            {
+              "option_id": "hyperframes",
+              "label": "HyperFrames",
+              "score": 0.0,
+              "reason": "tidak tersedia, tanpa ffmpeg"
             }
           ],
           "reason": "Approved Remotion"
@@ -172,6 +284,18 @@
               "label": "The 8-Hour Death Sentence",
               "score": 1.0,
               "reason": "Strongest hook"
+            },
+            {
+              "option_id": "c2",
+              "label": "The King Who Lost Everything",
+              "score": 0.8,
+              "reason": "Political angle"
+            },
+            {
+              "option_id": "c3",
+              "label": "The Mystery That Never Solved",
+              "score": 0.7,
+              "reason": "Analytical angle"
             }
           ],
           "reason": "Concept c1 selected"
@@ -182,6 +306,6 @@
   "style_playbook": "dark-history",
   "review": {
     "approved_by": "Riyanto",
-    "timestamp": "2026-10-18T09:41:34.845476+00:00"
+    "timestamp": "2026-10-18T13:50:16.318964+00:00"
   }
 }
