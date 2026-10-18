@@ -1,11 +1,10 @@
 {
   "version": "1.0",
-  "project_id": "sweating-sickness-1485-v2",
   "pipeline_type": "animated-explainer",
+  "project_id": "sweating-sickness-1485-v2",
+  "timestamp": "2026-10-18T13:55:00+00:00",
   "stage": "proposal",
   "status": "completed",
-  "timestamp": "2026-10-18T13:50:16.578894+00:00",
-  "checkpoint_policy": "guided",
   "human_approval_required": true,
   "human_approved": true,
   "artifacts": {
@@ -22,15 +21,10 @@
           "target_audience": "History enthusiasts",
           "target_platform": "youtube",
           "target_duration_seconds": 480,
-          "key_points": [
-            "Disease killed within 8-10 hours",
-            "Struck London September 19, 1485"
-          ],
+          "key_points": ["Disease killed within 8-10 hours", "Struck London September 19, 1485"],
           "core_message": "The sweating sickness was a terrifying medical mystery.",
           "tone": "ominous, atmospheric",
-          "grounded_in": [
-            "The onset of symptoms was sudden, and death or recovery often occurred within 8-10 hours."
-          ],
+          "grounded_in": ["The onset of symptoms was sudden, and death or recovery often occurred within 8-10 hours."],
           "why_this_works": "The 8-hour death window creates immediate tension."
         },
         {
@@ -43,15 +37,10 @@
           "target_audience": "Tudor history fans",
           "target_platform": "youtube",
           "target_duration_seconds": 480,
-          "key_points": [
-            "Disease broke out weeks after Bosworth",
-            "Leadership class decimated"
-          ],
+          "key_points": ["Disease broke out weeks after Bosworth", "Leadership class decimated"],
           "core_message": "Disease threatened the newly won Tudor dynasty.",
           "tone": "political, tense",
-          "grounded_in": [
-            "Disease broke out in London on 19 September 1485"
-          ],
+          "grounded_in": ["Disease broke out in London on 19 September 1485"],
           "why_this_works": "Connects disease to familiar Tudor political stakes."
         },
         {
@@ -64,15 +53,10 @@
           "target_audience": "Science fans",
           "target_platform": "youtube",
           "target_duration_seconds": 480,
-          "key_points": [
-            "Cause unknown after 500 years",
-            "Vanish in 1551"
-          ],
+          "key_points": ["Cause unknown after 500 years", "Vanish in 1551"],
           "core_message": "Some historical mysteries refuse to stay solved.",
           "tone": "mysterious",
-          "grounded_in": [
-            "Its cause remains unknown"
-          ],
+          "grounded_in": ["Its cause remains unknown"],
           "why_this_works": "Appeals to viewers who love unsolved medical puzzles."
         }
       ],
@@ -87,96 +71,45 @@
         "stages": [
           {
             "stage": "research",
-            "tools": [
-              {
-                "tool_name": "web_search",
-                "role": "gather sources",
-                "available": true
-              }
-            ],
-            "approach": "Wikipedia + BMJ + JSTOR research"
+            "tools": [{"tool_name": "web_search", "role": "gather sources", "available": true}],
+            "approach": "Wikipedia research only"
           },
           {
             "stage": "proposal",
-            "tools": [
-              {
-                "tool_name": "llm_assist",
-                "role": "concept selection",
-                "available": true
-              }
-            ],
+            "tools": [{"tool_name": "llm_assist", "role": "concept selection", "available": true}],
             "approach": "3 concepts, c1 selected"
           },
           {
             "stage": "script",
-            "tools": [
-              {
-                "tool_name": "llm_assist",
-                "role": "narrative writing",
-                "available": true
-              }
-            ],
+            "tools": [{"tool_name": "llm_assist", "role": "narrative writing", "available": true}],
             "approach": "12 beat script from Claude draft"
           },
           {
             "stage": "scene_plan",
-            "tools": [
-              {
-                "tool_name": "scene_planner",
-                "role": "shot planning",
-                "available": true
-              }
-            ],
+            "tools": [{"tool_name": "scene_planner", "role": "shot planning", "available": true}],
             "approach": "Shot list per scene",
             "fallback_if_unavailable": "skip scene_plan"
           },
           {
             "stage": "assets",
-            "tools": [
-              {
-                "tool_name": "image_selector",
-                "role": "generate images",
-                "available": true
-              }
-            ],
+            "tools": [{"tool_name": "image_selector", "role": "generate images", "available": true}],
             "approach": "Cloudflare images 1024x576",
             "fallback_if_unavailable": "use alternative provider"
           },
           {
             "stage": "edit",
-            "tools": [
-              {
-                "tool_name": "ffmpeg",
-                "role": "audio-video sync",
-                "available": true
-              }
-            ],
-            "approach": "Sync narration with images",
-            "fallback_if_unavailable": "manual edit"
+            "tools": [{"tool_name": "video_compose", "role": "audio-video sync", "available": true}],
+            "approach": "Sync narration with images"
           },
           {
             "stage": "compose",
-            "tools": [
-              {
-                "tool_name": "remotion",
-                "role": "compositing",
-                "available": true
-              }
-            ],
-            "approach": "Remotion studio render",
-            "fallback_if_unavailable": "manual composition"
+            "tools": [{"tool_name": "video_compose", "role": "compositing", "available": true}],
+            "approach": "Remotion studio render"
           },
           {
             "stage": "render",
-            "tools": [
-              {
-                "tool_name": "ffmpeg",
-                "role": "final encode",
-                "available": true
-              }
-            ],
-            "approach": "1920x1080 encode",
-            "fallback_if_unavailable": "lower resolution"
+            "tools": [{"tool_name": "video_compose", "role": "final encode", "available": true}],
+            "approach": "1920x1080 encode via ffmpeg"
           }
         ],
         "render_runtime": "remotion",
@@ -202,8 +135,7 @@
           "delivery_style": "deep, calm",
           "pacing_policy": "deliberate pauses",
           "sample_approval_required": true
-        },
-        "decision_log_ref": "/home/codespace/OpenMontage/projects/sweating-sickness-1485-v2/decision_log.json"
+        }
       },
       "cost_estimate": {
         "total_estimated_usd": 0.0,
@@ -217,95 +149,6 @@
         "user_notes": "Approved per T1 ulang v2",
         "approved_budget_usd": 0.0
       }
-    },
-    "decision_log": {
-      "version": "1.0",
-      "project_id": "sweating-sickness-1485-v2",
-      "decisions": [
-        {
-          "decision_id": "renderer_family_selection",
-          "stage": "proposal",
-          "category": "renderer_family_selection",
-          "subject": "Creative renderer family",
-          "selected": "animation-first",
-          "options_considered": [
-            {
-              "option_id": "animation-first",
-              "label": "animation-first",
-              "score": 1.0,
-              "reason": "Explainer composition works with PNG images"
-            },
-            {
-              "option_id": "cinematic-trailer",
-              "label": "cinematic-trailer",
-              "score": 0.5,
-              "reason": "Requires video clips"
-            },
-            {
-              "option_id": "documentary-montage",
-              "label": "documentary-montage",
-              "score": 0.5,
-              "reason": "Requires archive footage"
-            }
-          ],
-          "reason": "Approved animation-first"
-        },
-        {
-          "decision_id": "render_runtime_selection",
-          "stage": "proposal",
-          "category": "render_runtime_selection",
-          "subject": "Composition runtime",
-          "selected": "remotion",
-          "options_considered": [
-            {
-              "option_id": "remotion",
-              "label": "Remotion",
-              "score": 1.0,
-              "reason": "Supported anime_scene"
-            },
-            {
-              "option_id": "hyperframes",
-              "label": "HyperFrames",
-              "score": 0.0,
-              "reason": "tidak tersedia, tanpa ffmpeg"
-            }
-          ],
-          "reason": "Approved Remotion"
-        },
-        {
-          "decision_id": "concept_selection",
-          "stage": "proposal",
-          "category": "concept_selection",
-          "subject": "Narrative concept",
-          "selected": "c1",
-          "options_considered": [
-            {
-              "option_id": "c1",
-              "label": "The 8-Hour Death Sentence",
-              "score": 1.0,
-              "reason": "Strongest hook"
-            },
-            {
-              "option_id": "c2",
-              "label": "The King Who Lost Everything",
-              "score": 0.8,
-              "reason": "Political angle"
-            },
-            {
-              "option_id": "c3",
-              "label": "The Mystery That Never Solved",
-              "score": 0.7,
-              "reason": "Analytical angle"
-            }
-          ],
-          "reason": "Concept c1 selected"
-        }
-      ]
     }
-  },
-  "style_playbook": "dark-history",
-  "review": {
-    "approved_by": "Riyanto",
-    "timestamp": "2026-10-18T13:50:16.318964+00:00"
   }
 }

@@ -3,6 +3,38 @@
   "project_id": "sweating-sickness-1485-v2",
   "decisions": [
     {
+      "decision_id": "topic_selection",
+      "stage": "proposal",
+      "category": "topic_selection",
+      "subject": "Historical topic for dark-history",
+      "selected": "Sweating Sickness 1485",
+      "options_considered": [
+        {
+          "option_id": "sweating-sickness-1485",
+          "label": "Sweating Sickness 1485",
+          "score": 1.0,
+          "reason": "Strong hook (8-hour death), well-documented timeline"
+        }
+      ],
+      "reason": "Selected for dramatic tension and clear historical record"
+    },
+    {
+      "decision_id": "playbook_selection",
+      "stage": "proposal",
+      "category": "playbook_selection",
+      "subject": "Visual style playbook",
+      "selected": "dark-history",
+      "options_considered": [
+        {
+          "option_id": "dark-history",
+          "label": "dark-history",
+          "score": 1.0,
+          "reason": "Atmospheric chiaroscuro, suitable for Tudor disease narrative"
+        }
+      ],
+      "reason": "Approved dark-history for moody, immersive historical tone"
+    },
+    {
       "decision_id": "renderer_family_selection",
       "stage": "proposal",
       "category": "renderer_family_selection",
@@ -14,9 +46,21 @@
           "label": "animation-first",
           "score": 1.0,
           "reason": "Explainer composition works with PNG images"
+        },
+        {
+          "option_id": "cinematic-trailer",
+          "label": "cinematic-trailer",
+          "score": 0.5,
+          "reason": "Requires video clips not available for this topic"
+        },
+        {
+          "option_id": "documentary-montage",
+          "label": "documentary-montage",
+          "score": 0.5,
+          "reason": "Requires archive footage not available for 1485"
         }
       ],
-      "reason": "Approved animation-first"
+      "reason": "Approved animation-first for static-image-based explainer"
     },
     {
       "decision_id": "render_runtime_selection",
@@ -29,10 +73,16 @@
           "option_id": "remotion",
           "label": "Remotion",
           "score": 1.0,
-          "reason": "Supported anime_scene"
+          "reason": "Supported anime_scene, PNG-based composition"
+        },
+        {
+          "option_id": "hyperframes",
+          "label": "HyperFrames",
+          "score": 0.0,
+          "reason": "Belum terintegrasi untuk renderer family animation-first di pipeline ini"
         }
       ],
-      "reason": "Approved Remotion"
+      "reason": "Approved Remotion (HyperFrames not integrated for animation-first in this pipeline)"
     },
     {
       "decision_id": "concept_selection",
@@ -45,10 +95,54 @@
           "option_id": "c1",
           "label": "The 8-Hour Death Sentence",
           "score": 1.0,
-          "reason": "Strongest hook"
+          "reason": "Strongest hook with immediate urgency"
+        },
+        {
+          "option_id": "c2",
+          "label": "The King Who Lost Everything",
+          "score": 0.8,
+          "reason": "Political angle, connects to Tudor dynasty"
+        },
+        {
+          "option_id": "c3",
+          "label": "The Mystery That Never Solved",
+          "score": 0.7,
+          "reason": "Analytical angle, appeals to science-curious viewers"
         }
       ],
-      "reason": "Concept c1 selected"
+      "reason": "Concept c1 selected for dramatic 8-hour death window hook"
+    },
+    {
+      "decision_id": "voice_selection",
+      "stage": "proposal",
+      "category": "voice_selection",
+      "subject": "TTS voice provider and model",
+      "selected": "chatterbox_nano + Q1",
+      "options_considered": [
+        {
+          "option_id": "chatterbox_nano",
+          "label": "Chatterbox Nano",
+          "score": 1.0,
+          "reason": "Reference voice cloning, deep calm tone matches narrative"
+        }
+      ],
+      "reason": "Approved Chatterbox Nano with Ryan (Q1) reference"
+    },
+    {
+      "decision_id": "duration_selection",
+      "stage": "proposal",
+      "category": "duration_selection",
+      "subject": "Video duration and word count",
+      "selected": "480 seconds / 1290 words",
+      "options_considered": [
+        {
+          "option_id": "480s",
+          "label": "480 seconds",
+          "score": 1.0,
+          "reason": "Target ±1250 words, 12 beats"
+        }
+      ],
+      "reason": "Approved 480 seconds with 1290-word script"
     }
   ]
 }
