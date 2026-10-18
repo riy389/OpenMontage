@@ -4,7 +4,7 @@
   "pipeline_type": "animated-explainer",
   "stage": "proposal",
   "status": "completed",
-  "timestamp": "2026-10-18T14:19:28.162617+00:00",
+  "timestamp": "2026-10-18T14:39:37.935363+00:00",
   "checkpoint_policy": "guided",
   "human_approval_required": true,
   "human_approved": true,
@@ -87,14 +87,8 @@
         "stages": [
           {
             "stage": "research",
-            "tools": [
-              {
-                "tool_name": "web_search",
-                "role": "gather sources",
-                "available": true
-              }
-            ],
-            "approach": "Wikipedia + BMJ + JSTOR research"
+            "tools": [],
+            "approach": "Web search on Wikipedia (sweating sickness) for timeline and symptoms"
           },
           {
             "stage": "proposal",
@@ -116,7 +110,7 @@
                 "available": true
               }
             ],
-            "approach": "12 beat script from Claude draft"
+            "approach": "12 beat script from Claude draft (verbatim ingest)"
           },
           {
             "stage": "scene_plan",
@@ -127,19 +121,24 @@
                 "available": true
               }
             ],
-            "approach": "Shot list per scene",
+            "approach": "Shot list per scene from script beats",
             "fallback_if_unavailable": "skip scene_plan"
           },
           {
             "stage": "assets",
             "tools": [
               {
+                "tool_name": "tts_selector",
+                "role": "generate narration",
+                "available": true
+              },
+              {
                 "tool_name": "image_selector",
                 "role": "generate images",
                 "available": true
               }
             ],
-            "approach": "Cloudflare images 1024x576",
+            "approach": "Cloudflare images 1024x576 + Chatterbox Nano TTS",
             "fallback_if_unavailable": "use alternative provider"
           },
           {
@@ -158,12 +157,17 @@
             "stage": "compose",
             "tools": [
               {
-                "tool_name": "remotion",
-                "role": "compositing",
+                "tool_name": "video_compose",
+                "role": "Remotion compositing",
+                "available": true
+              },
+              {
+                "tool_name": "audio_mixer",
+                "role": "mix narration",
                 "available": true
               }
             ],
-            "approach": "Remotion studio render",
+            "approach": "Remotion studio render with audio_mixer",
             "fallback_if_unavailable": "manual composition"
           },
           {
@@ -223,6 +227,38 @@
       "project_id": "sweating-sickness-1485-v2",
       "decisions": [
         {
+          "decision_id": "topic_selection",
+          "stage": "proposal",
+          "category": "provider_selection",
+          "subject": "Historical topic for dark-history",
+          "selected": "Sweating Sickness 1485",
+          "options_considered": [
+            {
+              "option_id": "sweating-sickness-1485",
+              "label": "Sweating Sickness 1485",
+              "score": 1.0,
+              "reason": "Strong hook (8-hour death), well-documented timeline"
+            }
+          ],
+          "reason": "Selected for dramatic tension and clear historical record"
+        },
+        {
+          "decision_id": "playbook_selection",
+          "stage": "proposal",
+          "category": "playbook_selection",
+          "subject": "Visual style playbook",
+          "selected": "dark-history",
+          "options_considered": [
+            {
+              "option_id": "dark-history",
+              "label": "dark-history",
+              "score": 1.0,
+              "reason": "Atmospheric chiaroscuro, suitable for Tudor disease narrative"
+            }
+          ],
+          "reason": "Approved dark-history for moody, immersive historical tone"
+        },
+        {
           "decision_id": "renderer_family_selection",
           "stage": "proposal",
           "category": "renderer_family_selection",
@@ -234,9 +270,21 @@
               "label": "animation-first",
               "score": 1.0,
               "reason": "Explainer composition works with PNG images"
+            },
+            {
+              "option_id": "cinematic-trailer",
+              "label": "cinematic-trailer",
+              "score": 0.5,
+              "reason": "Requires video clips not available for this topic"
+            },
+            {
+              "option_id": "documentary-montage",
+              "label": "documentary-montage",
+              "score": 0.5,
+              "reason": "Requires archive footage not available for 1485"
             }
           ],
-          "reason": "Approved animation-first"
+          "reason": "Approved animation-first for static-image-based explainer"
         },
         {
           "decision_id": "render_runtime_selection",
@@ -255,10 +303,10 @@
               "option_id": "hyperframes",
               "label": "HyperFrames",
               "score": 0.0,
-              "reason": "Word-level caption burn not supported (stays on Remotion in Phase 1); Existing React scene stack (text_card, stat_card, chart, comparison): reuse Remotion"
+              "reason": "Belum terintegrasi untuk renderer family animation-first di pipeline ini"
             }
           ],
-          "reason": "Approved Remotion (HyperFrames not good for word-level caption and React scene stack)"
+          "reason": "Approved Remotion (HyperFrames not integrated for animation-first in this pipeline)"
         },
         {
           "decision_id": "concept_selection",
@@ -271,10 +319,54 @@
               "option_id": "c1",
               "label": "The 8-Hour Death Sentence",
               "score": 1.0,
-              "reason": "Strongest hook"
+              "reason": "Strongest hook with immediate urgency"
+            },
+            {
+              "option_id": "c2",
+              "label": "The King Who Lost Everything",
+              "score": 0.8,
+              "reason": "Political angle, connects to Tudor dynasty"
+            },
+            {
+              "option_id": "c3",
+              "label": "The Mystery That Never Solved",
+              "score": 0.7,
+              "reason": "Analytical angle, appeals to science-curious viewers"
             }
           ],
-          "reason": "Concept c1 selected"
+          "reason": "Concept c1 selected for dramatic 8-hour death window hook"
+        },
+        {
+          "decision_id": "voice_selection",
+          "stage": "proposal",
+          "category": "voice_selection",
+          "subject": "TTS voice provider and model",
+          "selected": "chatterbox_nano + Q1",
+          "options_considered": [
+            {
+              "option_id": "chatterbox_nano",
+              "label": "Chatterbox Nano",
+              "score": 1.0,
+              "reason": "Reference voice cloning, deep calm tone matches narrative"
+            }
+          ],
+          "reason": "Approved Chatterbox Nano with Ryan (Q1) reference"
+        },
+        {
+          "decision_id": "duration_selection",
+          "stage": "proposal",
+          "category": "motion_commitment",
+          "subject": "Video duration and word count",
+          "selected": "480 seconds / 1290 words",
+          "options_considered": [
+            {
+              "option_id": "480s",
+              "label": "480 seconds",
+              "score": 1.0,
+              "reason": "Target \u00b11250 words, 12 beats"
+            }
+          ],
+          "reason": "Approved 480 seconds with 1290-word script"
         }
       ]
     }
@@ -282,6 +374,7 @@
   "style_playbook": "dark-history",
   "review": {
     "approved_by": "Riyanto",
-    "timestamp": "2026-10-18T14:19:27.995750+00:00"
+    "timestamp": "2026-10-18T14:39:37.777803+00:00",
+    "note": "Synced with decision_log (7 decisions, categories fixed), updated stages per pipeline_defs"
   }
 }

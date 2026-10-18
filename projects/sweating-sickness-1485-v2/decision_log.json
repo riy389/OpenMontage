@@ -5,7 +5,7 @@
     {
       "decision_id": "topic_selection",
       "stage": "proposal",
-      "category": "topic_selection",
+      "category": "provider_selection",
       "subject": "Historical topic for dark-history",
       "selected": "Sweating Sickness 1485",
       "options_considered": [
@@ -131,7 +131,7 @@
     {
       "decision_id": "duration_selection",
       "stage": "proposal",
-      "category": "duration_selection",
+      "category": "motion_commitment",
       "subject": "Video duration and word count",
       "selected": "480 seconds / 1290 words",
       "options_considered": [

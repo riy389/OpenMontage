@@ -3,7 +3,7 @@
   "project_id": "sweating-sickness-1485-v2",
   "pipeline_type": "animated-explainer",
   "stage": "script",
-  "status": "awaiting_human",
+  "status": "completed",
   "timestamp": "2026-10-18T14:19:28.394955+00:00",
   "checkpoint_policy": "guided",
   "human_approval_required": true,
@@ -412,7 +412,9 @@
   "style_playbook": "dark-history",
   "review": {
     "stage": "script",
-    "status": "awaiting_human",
-    "note": "OK Riyanto, komentar 6250812829"
+    "status": "completed",
+    "note": "Approved per comment 6250812829",
+    "approved_by": "Riyanto",
+    "timestamp": "2026-10-18T14:33:07.159363+00:00"
   }
 }
