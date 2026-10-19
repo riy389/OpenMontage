@@ -1,0 +1,98 @@
+name: Nano Narrate (script beats -> WAV, manual)
+
+# Narrasi per beat dengan Chatterbox Nano + referensi Ryan. Teks naskah dipakai apa adanya.
+# Hasil: beat_NN.wav, narration_full.wav, narration_manifest.json (durasi + start/end kumulatif).
+
+on:
+  workflow_dispatch:
+    inputs:
+      script_ref:
+        description: "Branch/ref berisi naskah"
+        default: "t1v2-review"
+        required: true
+      script_path:
+        description: "Path naskah di ref itu"
+        default: "projects/sweating-sickness-1485-v2/script_draft_claude.md"
+        required: true
+      ref_path:
+        description: "Referensi suara di main"
+        default: "assets/voice_ref/Q1_qwen_ryan.mp3"
+        required: true
+
+jobs:
+  narrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    env:
+      SCRIPT_PATH: ${{ inputs.script_path }}
+      REF_PATH: ${{ inputs.ref_path }}
+
+    steps:
+      - name: Checkout main (worker + referensi suara)
+        uses: actions/checkout@v4
+
+      - name: Checkout naskah
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.script_ref }}
+          path: script_src
+
+      - name: Check prerequisites and parse script (dry run)
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then echo "ERROR: secret HF_TOKEN kosong"; exit 1; fi
+          if [ ! -f "$REF_PATH" ]; then echo "ERROR: referensi tidak ada: $REF_PATH"; exit 1; fi
+          if [ ! -f "script_src/$SCRIPT_PATH" ]; then echo "ERROR: naskah tidak ada: $SCRIPT_PATH"; exit 1; fi
+          md5sum "script_src/$SCRIPT_PATH"
+          python3 scripts/nano_narrate_beats.py --script "script_src/$SCRIPT_PATH" --dry-run
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Nano into its own venv
+        run: |
+          python -m venv "$RUNNER_TEMP/nano-venv"
+          time "$RUNNER_TEMP/nano-venv/bin/pip" install \
+            "git+https://github.com/resemble-ai/chatterbox.git@5de7a54aa4e5e2baadb0182dde554908b48b85c2" \
+            soundfile numpy --extra-index-url https://download.pytorch.org/whl/cpu
+
+      - name: Cache Hugging Face model
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/hf-cache
+          key: hf-chatterbox-nano-v1
+
+      - name: Download model (from_pretrained, nano=True)
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_HOME: ${{ runner.temp }}/hf-cache
+        run: |
+          time "$RUNNER_TEMP/nano-venv/bin/python" -c "from chatterbox.tts_turbo import ChatterboxTurboTTS; ChatterboxTurboTTS.from_pretrained(device='cpu', nano=True); print('MODEL_OK')"
+
+      - name: Narrate all beats (offline)
+        env:
+          HF_HOME: ${{ runner.temp }}/hf-cache
+          HF_HUB_OFFLINE: "1"
+        run: |
+          time python3 scripts/nano_narrate_beats.py \
+            --script "script_src/$SCRIPT_PATH" --ref "$REF_PATH" --out-dir out \
+            --worker scripts/chatterbox_nano_worker.py \
+            --nano-python "$RUNNER_TEMP/nano-venv/bin/python"
+
+      - name: Raw numbers
+        run: |
+          ls -la out
+          md5sum out/*.wav
+          python3 -c "import json; m=json.load(open('out/narration_manifest.json')); print('script_md5', m['script_md5'], 'total_audio_seconds', m['total_audio_seconds']); [print(b['id'], b['audio_seconds'], b['start_seconds'], b['end_seconds'], 'rtf', b['rtf']) for b in m['beats']]"
+
+      - name: Upload narration
+        uses: actions/upload-artifact@v4
+        with:
+          name: narration-t1
+          path: out/
+          retention-days: 14
