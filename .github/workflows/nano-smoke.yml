@@ -1,24 +1,30 @@
 name: Nano Smoke (Chatterbox Nano worker, manual)
 
-# Tes mekanisme saja: pasang Nano di runner, unduh model, jalankan
-# scripts/chatterbox_nano_worker.py pada 5 kalimat uji, lalu laporkan angka mentah.
-# Prasyarat: secret HF_TOKEN dan file referensi suara di repo (input ref_path).
+# Tes mekanisme + banding dua referensi suara (Ryan vs Onyx) dengan teks, seed, dan resep sama.
+# Prasyarat: secret HF_TOKEN dan file referensi suara di repo.
 # Resep install = workflow generate-pipeline WealthVault (chatterbox @ 5de7a54, torch CPU).
 
 on:
   workflow_dispatch:
     inputs:
-      ref_path:
-        description: "Path file referensi suara di repo"
+      ref_path_a:
+        description: "Referensi A (Ryan)"
         default: "assets/voice_ref/Q1_qwen_ryan.mp3"
+        required: true
+      ref_path_b:
+        description: "Referensi B (Onyx)"
+        default: "assets/voice_ref/C2_onyx_prosody.mp3"
         required: true
 
 jobs:
   nano-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     permissions:
       contents: read
+    env:
+      REF_A: ${{ inputs.ref_path_a }}
+      REF_B: ${{ inputs.ref_path_b }}
 
     steps:
       - name: Checkout
@@ -29,8 +35,10 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           if [ -z "$HF_TOKEN" ]; then echo "ERROR: secret HF_TOKEN kosong"; exit 1; fi
-          if [ ! -f "${{ inputs.ref_path }}" ]; then echo "ERROR: file referensi tidak ada: ${{ inputs.ref_path }}"; exit 1; fi
-          ls -la "${{ inputs.ref_path }}"
+          for f in "$REF_A" "$REF_B"; do
+            if [ ! -f "$f" ]; then echo "ERROR: file referensi tidak ada: $f"; exit 1; fi
+            ls -la "$f"
+          done
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -64,32 +72,40 @@ jobs:
           time "$RUNNER_TEMP/nano-venv/bin/python" -c "from chatterbox.tts_turbo import ChatterboxTurboTTS; ChatterboxTurboTTS.from_pretrained(device='cpu', nano=True); print('MODEL_OK')"
           du -sh "$HF_HOME"
 
-      - name: Run worker (5 test sentences, offline)
+      - name: Run worker for both references (5 test sentences, offline)
         env:
           HF_HOME: ${{ runner.temp }}/hf-cache
           HF_HUB_OFFLINE: "1"
         run: |
-          python - <<'EOF'
+          for pair in "ryan:$REF_A" "onyx:$REF_B"; do
+            name="${pair%%:*}"; ref="${pair#*:}"
+            echo "=== $name ($ref) ==="
+            NAME="$name" REF="$ref" python - <<'EOF'
           import json, os
           text = ("The ferry bumps against the wet stones of the dock. "
                   "I step off, and the tide smells of mud and old fish. "
                   "Do you hear the bells in the distance? "
                   "A baker bangs his shutters closed, and I keep walking. "
                   "Nobody around me knows what is coming.")
-          json.dump({"text": text, "output_path": "nano_smoke.wav",
-                     "ref_audio_path": "${{ inputs.ref_path }}", "seed": 42,
-                     "temperature": 0.8, "end_pause_ms": 900}, open("args.json", "w"))
+          n = os.environ["NAME"]
+          json.dump({"text": text, "output_path": f"nano_smoke_{n}.wav",
+                     "ref_audio_path": os.environ["REF"], "seed": 42,
+                     "temperature": 0.8, "end_pause_ms": 900}, open(f"args_{n}.json", "w"))
           EOF
-          time "$RUNNER_TEMP/nano-venv/bin/python" scripts/chatterbox_nano_worker.py "$(cat args.json)" | tee worker_out.txt
+            time "$RUNNER_TEMP/nano-venv/bin/python" scripts/chatterbox_nano_worker.py "$(cat args_$name.json)" | tee worker_out_$name.txt
+            grep '^RESULT:' worker_out_$name.txt | sed 's/^RESULT://' > result_$name.json
+          done
 
       - name: Raw numbers
         run: |
-          grep '^RESULT:' worker_out.txt | sed 's/^RESULT://' > result.json
-          cat result.json
-          ls -la nano_smoke.wav
-          md5sum nano_smoke.wav
-          ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 nano_smoke.wav
-          ffmpeg -hide_banner -i nano_smoke.wav -af volumedetect -f null - 2>&1 | grep -E "mean_volume|max_volume"
+          for name in ryan onyx; do
+            echo "=== $name ==="
+            cat result_$name.json
+            ls -la nano_smoke_$name.wav
+            md5sum nano_smoke_$name.wav
+            ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 nano_smoke_$name.wav
+            ffmpeg -hide_banner -i nano_smoke_$name.wav -af volumedetect -f null - 2>&1 | grep -E "mean_volume|max_volume"
+          done
           nproc; free -m | head -2
 
       - name: Upload audio for listening
@@ -97,5 +113,5 @@ jobs:
         with:
           name: nano-smoke
           path: |
-            nano_smoke.wav
-            result.json
+            nano_smoke_*.wav
+            result_*.json
