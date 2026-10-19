@@ -1,0 +1,101 @@
+name: Nano Smoke (Chatterbox Nano worker, manual)
+
+# Tes mekanisme saja: pasang Nano di runner, unduh model, jalankan
+# scripts/chatterbox_nano_worker.py pada 5 kalimat uji, lalu laporkan angka mentah.
+# Prasyarat: secret HF_TOKEN dan file referensi suara di repo (input ref_path).
+# Resep install = workflow generate-pipeline WealthVault (chatterbox @ 5de7a54, torch CPU).
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref_path:
+        description: "Path file referensi suara di repo"
+        default: "assets/voice_ref/Q1_qwen_ryan.mp3"
+        required: true
+
+jobs:
+  nano-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check prerequisites
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then echo "ERROR: secret HF_TOKEN kosong"; exit 1; fi
+          if [ ! -f "${{ inputs.ref_path }}" ]; then echo "ERROR: file referensi tidak ada: ${{ inputs.ref_path }}"; exit 1; fi
+          ls -la "${{ inputs.ref_path }}"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Install Nano into its own venv
+        run: |
+          python -m venv "$RUNNER_TEMP/nano-venv"
+          time "$RUNNER_TEMP/nano-venv/bin/pip" install \
+            "git+https://github.com/resemble-ai/chatterbox.git@5de7a54aa4e5e2baadb0182dde554908b48b85c2" \
+            soundfile numpy --extra-index-url https://download.pytorch.org/whl/cpu
+          "$RUNNER_TEMP/nano-venv/bin/pip" list 2>/dev/null | grep -i -E "^(torch|torchaudio|chatterbox)" || true
+
+      - name: Cache Hugging Face model
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/hf-cache
+          key: hf-chatterbox-nano-v1
+
+      - name: Download model (from_pretrained, nano=True)
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_HOME: ${{ runner.temp }}/hf-cache
+        run: |
+          time "$RUNNER_TEMP/nano-venv/bin/python" -c "from chatterbox.tts_turbo import ChatterboxTurboTTS; ChatterboxTurboTTS.from_pretrained(device='cpu', nano=True); print('MODEL_OK')"
+          du -sh "$HF_HOME"
+
+      - name: Run worker (5 test sentences, offline)
+        env:
+          HF_HOME: ${{ runner.temp }}/hf-cache
+          HF_HUB_OFFLINE: "1"
+        run: |
+          python - <<'EOF'
+          import json, os
+          text = ("The ferry bumps against the wet stones of the dock. "
+                  "I step off, and the tide smells of mud and old fish. "
+                  "Do you hear the bells in the distance? "
+                  "A baker bangs his shutters closed, and I keep walking. "
+                  "Nobody around me knows what is coming.")
+          json.dump({"text": text, "output_path": "nano_smoke.wav",
+                     "ref_audio_path": "${{ inputs.ref_path }}", "seed": 42,
+                     "temperature": 0.8, "end_pause_ms": 900}, open("args.json", "w"))
+          EOF
+          time "$RUNNER_TEMP/nano-venv/bin/python" scripts/chatterbox_nano_worker.py "$(cat args.json)" | tee worker_out.txt
+
+      - name: Raw numbers
+        run: |
+          grep '^RESULT:' worker_out.txt | sed 's/^RESULT://' > result.json
+          cat result.json
+          ls -la nano_smoke.wav
+          md5sum nano_smoke.wav
+          ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 nano_smoke.wav
+          ffmpeg -hide_banner -i nano_smoke.wav -af volumedetect -f null - 2>&1 | grep -E "mean_volume|max_volume"
+          nproc; free -m | head -2
+
+      - name: Upload audio for listening
+        uses: actions/upload-artifact@v4
+        with:
+          name: nano-smoke
+          path: |
+            nano_smoke.wav
+            result.json
